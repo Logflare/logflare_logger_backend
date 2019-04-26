@@ -63,7 +63,13 @@ defmodule LogflareLogger.HttpBackendTest do
       assert %{
                "level" => "info",
                "message" => "Incoming log from test",
-               "metadata" => %{"pid" => pidbinary},
+               "metadata" => %{
+                 "pid" => pidbinary,
+                 "module" => _,
+                 "file" => _,
+                 "line" => _,
+                 "function" => _
+               },
                "timestamp" => _
              } = JSON.decode!(body)
 
@@ -74,7 +80,10 @@ defmodule LogflareLogger.HttpBackendTest do
 
     log_msg = "Incoming log from test"
 
-    config = build_config(config, metadata: [:pid])
+    config =
+      build_config(config,
+        metadata: :all
+      )
 
     :ok = Logger.configure_backend(@logger_backend, config)
 
