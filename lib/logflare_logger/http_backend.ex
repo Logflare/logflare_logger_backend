@@ -3,7 +3,7 @@ defmodule LogflareLogger.Backend do
   Implements :gen_event behaviour, handles incoming Logger messages
   """
   @behaviour :gen_event
-  alias LogflareLogger.ApiClient
+  alias LogflareLogger.{ApiClient, Formatter}
 
   # TypeSpecs
 
@@ -17,9 +17,10 @@ defmodule LogflareLogger.Backend do
     {:ok, state}
   end
 
-  def handle_event({level, gl, {Logger, msg, datetime, metadata}}, state) do
+  def handle_event({level, _gl, {Logger, msg, datetime, metadata}}, state) do
     if log_level_matches?(level, state.min_level) do
-      {:ok, _} = ApiClient.post_logs(state.api_client, msg)
+      formatted = format_event(level, msg, datetime, metadata, state)
+      {:ok, _} = ApiClient.post_logs(state.api_client, formatted)
       {:ok, state}
     else
       {:ok, state}
@@ -42,8 +43,9 @@ defmodule LogflareLogger.Backend do
     port = Keyword.get(options, :port)
     host = Keyword.get(options, :host)
     level = Keyword.get(options, :level)
+    format = Keyword.get(options, :format)
     api_client = ApiClient.new(%{port: port, host: host})
-    %{api_client: api_client, min_level: level}
+    %{api_client: api_client, min_level: level, format: format}
   end
 
   defp configure(:test, _state) do
@@ -55,4 +57,8 @@ defmodule LogflareLogger.Backend do
   @spec log_level_matches?(level, level | nil) :: boolean
   defp log_level_matches?(_lvl, nil), do: true
   defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
+
+  defp format_event(level, msg, ts, md, %{format: {Formatter, :format}}) do
+    Formatter.format(level, msg, ts, md)
+  end
 end
