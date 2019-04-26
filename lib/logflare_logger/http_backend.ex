@@ -59,8 +59,20 @@ defmodule LogflareLogger.Backend do
   defp log_level_matches?(_lvl, nil), do: true
   defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
 
-  defp format_event(level, msg, ts, meta, %{format: {Formatter, :format}} = state) do
-    meta = meta |> Enum.into(Map.new()) |> Map.take(state.metadata)
+  defp format_event(
+         level,
+         msg,
+         ts,
+         meta,
+         %{format: {Formatter, :format}, metadata: metakeys} = state
+       )
+       when is_list(metakeys) do
+    meta = meta |> Enum.into(%{}) |> Map.take(state.metadata)
+    Formatter.format(level, msg, ts, meta)
+  end
+
+  defp format_event(level, msg, ts, meta, %{metadata: :all}) do
+    meta = meta |> Enum.into(%{})
     Formatter.format(level, msg, ts, meta)
   end
 end
