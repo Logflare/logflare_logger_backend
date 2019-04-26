@@ -3,13 +3,18 @@ defmodule LogflareLogger.Backend do
   Implements :gen_event behaviour, handles incoming Logger messages
   """
   @behaviour :gen_event
+  alias LogflareLogger.ApiClient
 
   def init({__MODULE__, options}) do
     {:ok, configure(options, [])}
   end
 
-  def handle_event({_level, gl, {Logger, _, _, _}}, state)
-      when node(gl) != node() do
+  def handle_event({_level, gl, _msg}, state) when node(gl) != node() do
+    {:ok, state}
+  end
+
+  def handle_event({_level, gl, {Logger, msg, datetime, metadata}}, state) do
+    {:ok, _} = ApiClient.post_logs(state.api_client, msg)
     {:ok, state}
   end
 
@@ -25,5 +30,14 @@ defmodule LogflareLogger.Backend do
 
   def terminate(_reason, _state), do: :ok
 
-  defp configure(options, _state), do: options
+  defp configure(options, _state) when is_list(options) do
+    port = Keyword.get(options, :port)
+    host = Keyword.get(options, :host)
+    api_client = ApiClient.new(%{port: port, host: host})
+    %{api_client: api_client}
+  end
+
+  defp configure(:test, _state) do
+    %{}
+  end
 end
