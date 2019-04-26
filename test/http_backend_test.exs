@@ -1,5 +1,7 @@
 defmodule LogflareLogger.HttpBackendTest do
   use ExUnit.Case, async: true
+  alias LogflareLogger.Formatter
+  alias Jason, as: JSON
   require Logger
 
   @host "127.0.0.1"
@@ -15,6 +17,7 @@ defmodule LogflareLogger.HttpBackendTest do
         @logger_backend,
         host: @host,
         port: bypass.port,
+        format: {Formatter, :format},
         level: :info,
         type: "testing",
         metadata: []
@@ -27,7 +30,15 @@ defmodule LogflareLogger.HttpBackendTest do
     log_msg = "Incoming log from test"
 
     Bypass.expect_once(bypass, "POST", "/api/v0/elixir-logger", fn conn ->
-      {:ok, ^log_msg, conn} = Plug.Conn.read_body(conn)
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+      assert %{
+               "level" => "info",
+               "message" => "Incoming log from test",
+               "metadata" => [],
+               "timestamp" => _
+             } = JSON.decode!(body)
+
       Plug.Conn.resp(conn, 200, "")
     end)
 
