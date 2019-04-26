@@ -38,7 +38,7 @@ defmodule LogflareLogger.HttpBackendTest do
   test "doesn't POST log events with a lower level", %{bypass: bypass} do
     log_msg = "Incoming log from test"
 
-    :ok = Logger.info(log_msg)
+    :ok = Logger.debug(log_msg)
     Process.sleep(100)
   end
 end
