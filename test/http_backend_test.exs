@@ -35,7 +35,7 @@ defmodule LogflareLogger.HttpBackendTest do
       assert %{
                "level" => "info",
                "message" => "Incoming log from test",
-               "metadata" => [],
+               "metadata" => %{},
                "timestamp" => _
              } = JSON.decode!(body)
 

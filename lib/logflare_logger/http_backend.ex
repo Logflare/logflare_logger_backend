@@ -44,8 +44,9 @@ defmodule LogflareLogger.Backend do
     host = Keyword.get(options, :host)
     level = Keyword.get(options, :level)
     format = Keyword.get(options, :format)
+    metadata = Keyword.get(options, :metadata)
     api_client = ApiClient.new(%{port: port, host: host})
-    %{api_client: api_client, min_level: level, format: format}
+    %{api_client: api_client, min_level: level, format: format, metadata: metadata}
   end
 
   defp configure(:test, _state) do
@@ -58,7 +59,8 @@ defmodule LogflareLogger.Backend do
   defp log_level_matches?(_lvl, nil), do: true
   defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
 
-  defp format_event(level, msg, ts, md, %{format: {Formatter, :format}}) do
-    Formatter.format(level, msg, ts, md)
+  defp format_event(level, msg, ts, meta, %{format: {Formatter, :format}} = state) do
+    meta = meta |> Enum.into(Map.new()) |> Map.take(state.metadata)
+    Formatter.format(level, msg, ts, meta)
   end
 end
