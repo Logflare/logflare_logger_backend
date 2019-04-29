@@ -25,7 +25,8 @@ defmodule LogflareLogger.MixProject do
       {:mix_test_watch, ">= 0.9.0"},
       {:jason, "~> 1.0"},
       {:bypass, "~> 1.0", only: :test},
-      {:tesla, "~> 1.2.1"}
+      {:tesla, "~> 1.2.1"},
+      {:cachex, "~> 3.1"}
     ]
   end
 end
