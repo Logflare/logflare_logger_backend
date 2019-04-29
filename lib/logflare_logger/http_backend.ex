@@ -3,6 +3,7 @@ defmodule LogflareLogger.Backend do
   Implements :gen_event behaviour, handles incoming Logger messages
   """
   @behaviour :gen_event
+  @default_batch_size 1000
   alias LogflareLogger.{ApiClient, Formatter, Cache}
 
   # TypeSpecs
@@ -57,6 +58,7 @@ defmodule LogflareLogger.Backend do
     format = Keyword.get(options, :format)
     metadata = Keyword.get(options, :metadata)
     max_batch_size = Keyword.get(options, :max_batch_size)
+
     api_client = ApiClient.new(%{port: port, host: host})
 
     %{
@@ -66,7 +68,7 @@ defmodule LogflareLogger.Backend do
       metadata: metadata,
       batch: %{
         size: 0,
-        max_size: 0 || max_batch_size
+        max_size: max_batch_size || @default_batch_size
       }
     }
   end
