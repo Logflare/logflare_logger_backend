@@ -64,12 +64,25 @@ defmodule LogflareLogger.Backend do
     %{}
   end
 
-  def increment_batch_size(state) do
-    update_in(state.batch.size, &(&1 + 1))
-  end
+  # Batching and flushing
 
   def batch_ready?(%{batch: %{size: size, max_size: max_size}}) do
     size >= max_size
+  end
+
+  def update_batch(event, state) do
+    _ = Cache.add_event_to_batch(event)
+    update_in(state.batch.size, &(&1 + 1))
+  end
+
+  defp flush!(state) do
+    batch = Cache.get_batch()
+
+    if length(batch) > 0 do
+      {:ok, _} = ApiClient.post_logs(state.api_client, batch)
+      _ = Cache.reset_batch()
+      put_in(state.batch.size, 0)
+    end
   end
 
   # API
