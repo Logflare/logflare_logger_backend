@@ -64,6 +64,14 @@ defmodule LogflareLogger.Backend do
     %{}
   end
 
+  def increment_batch_size(state) do
+    update_in(state.batch.size, &(&1 + 1))
+  end
+
+  def batch_ready?(%{batch: %{size: size, max_size: max_size}}) do
+    size >= max_size
+  end
+
   # API
 
   @spec log_level_matches?(level, level | nil) :: boolean
