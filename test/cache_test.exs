@@ -9,7 +9,7 @@ defmodule LogflareLogger.CacheTest do
 
     assert Cache.add_event_to_batch(ev, @test_batch_key) === [ev]
 
-    assert Cache.add_event_to_batch(ev2, @test_batch_key) === [ev2, ev]
+    assert Cache.add_event_to_batch(ev2, @test_batch_key) === [ev, ev2]
 
     _ = Cache.reset_batch(@test_batch_key)
 

@@ -8,6 +8,7 @@ defmodule LogflareLogger.Cache do
 
   def get_batch(key \\ @batch) do
     Cachex.get!(@cache, key)
+    |> Enum.reverse()
   end
 
   def reset_batch(key \\ @batch) do
