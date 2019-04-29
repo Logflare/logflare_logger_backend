@@ -45,8 +45,19 @@ defmodule LogflareLogger.Backend do
     level = Keyword.get(options, :level)
     format = Keyword.get(options, :format)
     metadata = Keyword.get(options, :metadata)
+    max_batch_size = Keyword.get(options, :max_batch_size)
     api_client = ApiClient.new(%{port: port, host: host})
-    %{api_client: api_client, min_level: level, format: format, metadata: metadata}
+
+    %{
+      api_client: api_client,
+      min_level: level,
+      format: format,
+      metadata: metadata,
+      batch: %{
+        size: 0,
+        max_size: 0 || max_batch_size
+      }
+    }
   end
 
   defp configure(:test, _state) do
