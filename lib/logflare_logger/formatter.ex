@@ -12,7 +12,6 @@ defmodule LogflareLogger.Formatter do
     try do
       event
       |> metadata_to_binary()
-      |> JSON.encode!()
     rescue
       e ->
         %{
