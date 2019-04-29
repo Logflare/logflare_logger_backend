@@ -3,7 +3,7 @@ defmodule LogflareLogger.Backend do
   Implements :gen_event behaviour, handles incoming Logger messages
   """
   @behaviour :gen_event
-  alias LogflareLogger.{ApiClient, Formatter}
+  alias LogflareLogger.{ApiClient, Formatter, Cache}
 
   # TypeSpecs
 
@@ -18,16 +18,27 @@ defmodule LogflareLogger.Backend do
   end
 
   def handle_event({level, _gl, {Logger, msg, datetime, metadata}}, state) do
-    if log_level_matches?(level, state.min_level) do
-      formatted = format_event(level, msg, datetime, metadata, state)
-      {:ok, _} = ApiClient.post_logs(state.api_client, formatted)
-      {:ok, state}
-    else
-      {:ok, state}
-    end
+    state =
+      if log_level_matches?(level, state.min_level) do
+        formatted = format_event(level, msg, datetime, metadata, state)
+        state = update_batch(formatted, state)
+
+        if batch_ready?(state) do
+          flush!(state)
+        else
+          state
+        end
+      else
+        state
+      end
+
+    {:ok, state}
   end
 
-  def handle_event(:flush, state), do: {:ok, state}
+  def handle_event(:flush, state) do
+    state = flush!(state)
+    {:ok, state}
+  end
 
   def handle_call({:configure, options}, state) do
     {:ok, :ok, configure(options, state)}
