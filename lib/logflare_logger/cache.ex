@@ -21,13 +21,4 @@ defmodule LogflareLogger.Cache do
   def list_if_nil(nil), do: []
   def list_if_nil(xs), do: xs
 
-  # Config
-
-  def put_config(:source, source) do
-    Cachex.put!(@cache, {:config, :source}, source)
-  end
-
-  def get_config(:source) do
-    Cachex.get!(@cache, {:config, :source})
-  end
 end

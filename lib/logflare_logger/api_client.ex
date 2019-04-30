@@ -1,6 +1,5 @@
 defmodule LogflareLogger.ApiClient do
   use Tesla
-  alias LogflareLogger.Cache
 
   def new(%{url: url, api_key: api_key}) do
     [
@@ -12,8 +11,7 @@ defmodule LogflareLogger.ApiClient do
     |> Tesla.client()
   end
 
-  def post_logs(client, batch) when is_list(batch) do
-    source = Cache.get_config(:source)
+  def post_logs(client, batch, source) when is_list(batch) do
     Tesla.post(client, api_path(), %{"batch" => batch, "source" => source})
   end
 

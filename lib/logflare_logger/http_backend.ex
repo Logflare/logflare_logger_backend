@@ -16,6 +16,7 @@ defmodule LogflareLogger.HttpBackend do
     field(:api_client, Tesla.Client.t())
     field(:format, {atom, atom}, default: {Formatter, :format})
     field(:level, atom, default: :info)
+    field(:source, String.t)
     field(:metadata, list(atom), default: [])
     field(:batch_max_size, non_neg_integer, default: @default_batch_size)
     field(:batch_size, non_neg_integer, default: 0)
@@ -107,12 +108,11 @@ defmodule LogflareLogger.HttpBackend do
       throw("API key for LogflareLogger backend is NOT configured")
     end
 
-    Cache.put_config(:source, source)
-
     api_client = ApiClient.new(%{url: url, api_key: api_key})
 
     struct!(__MODULE__, %{
       api_client: api_client,
+      source: source,
       level: level,
       format: format,
       metadata: metadata,
@@ -141,7 +141,7 @@ defmodule LogflareLogger.HttpBackend do
   defp flush!(%__MODULE__{} = state) do
     batch = Cache.get_batch()
 
-    {:ok, _} = ApiClient.post_logs(state.api_client, batch)
+    {:ok, _} = ApiClient.post_logs(state.api_client, batch, state.source)
 
     _ = Cache.reset_batch()
     state = put_in(state.batch_size, 0)
