@@ -8,12 +8,13 @@ defmodule LogflareLogger.HttpBackendTest do
   @port 4444
   @path ApiClient.api_path()
 
-
   @logger_backend HttpBackend
+  @api_key "l3kh47jsakf2370dasg"
 
   setup do
     bypass = Bypass.open(port: @port)
     Application.put_env(:logflare_logger, :url, "http://127.0.0.1:#{@port}")
+    Application.put_env(:logflare_logger, :api_key, @api_key)
     Application.put_env(:logflare_logger, :level, :info)
     Application.put_env(:logflare_logger, :flush_interval, 500)
     Application.put_env(:logflare_logger, :max_batch_size, 100)
@@ -28,6 +29,8 @@ defmodule LogflareLogger.HttpBackendTest do
 
     Bypass.expect(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+      assert {"x-api-key", @api_key} in conn.req_headers
 
       body = JSON.decode!(body)
 
