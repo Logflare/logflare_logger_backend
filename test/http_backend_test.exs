@@ -1,31 +1,24 @@
 defmodule LogflareLogger.HttpBackendTest do
   use ExUnit.Case, async: false
   alias LogflareLogger.{HttpBackend, Formatter}
+  alias LogflareLogger.ApiClient
   alias Jason, as: JSON
   require Logger
 
-  @host "127.0.0.1"
   @port 4444
   @path ApiClient.api_path()
 
-  @default_config [
-    host: @host,
-    port: @port,
-    format: {Formatter, :format},
-    level: :info,
-    flush_interval: 500,
-    max_batch_size: 100,
-    type: "testing",
-    metadata: []
-  ]
 
   @logger_backend HttpBackend
-  Logger.add_backend(@logger_backend)
 
   setup do
     bypass = Bypass.open(port: @port)
+    Application.put_env(:logflare_logger, :url, "http://127.0.0.1:#{@port}")
+    Application.put_env(:logflare_logger, :level, :info)
+    Application.put_env(:logflare_logger, :flush_interval, 500)
+    Application.put_env(:logflare_logger, :max_batch_size, 100)
 
-    :ok = Logger.configure_backend(@logger_backend, @default_config)
+    Logger.add_backend(@logger_backend)
 
     {:ok, bypass: bypass, config: %{}}
   end
@@ -41,7 +34,7 @@ defmodule LogflareLogger.HttpBackendTest do
       assert %{
                "batch" => [
                  %{
-                   "level" => "info",
+                   "level" => level,
                    "message" => "Incoming log from test " <> _,
                    "metadata" => %{},
                    "timestamp" => _
@@ -51,6 +44,7 @@ defmodule LogflareLogger.HttpBackendTest do
              } = body
 
       assert length(body["batch"]) == 10
+      assert level in ["info", "error"]
 
       Plug.Conn.resp(conn, 200, "")
     end)
@@ -59,7 +53,11 @@ defmodule LogflareLogger.HttpBackendTest do
 
     Process.sleep(1_000)
 
-    for n <- 1..10, do: Logger.info(log_msg <> " ##{10 + n}")
+    for n <- 1..10, do: Logger.error(log_msg <> " ##{20 + n}")
+
+    Process.sleep(1_000)
+
+    for n <- 1..10, do: Logger.debug(log_msg <> " ##{30 + n}")
 
     Process.sleep(1_000)
   end
@@ -72,7 +70,6 @@ defmodule LogflareLogger.HttpBackendTest do
 
   @msg "Incoming log from test with all metadata"
   test "correctly handles metadata keys", %{bypass: bypass, config: config} do
-
     :ok = Logger.configure_backend(@logger_backend, metadata: :all)
 
     Bypass.expect_once(bypass, "POST", @path, fn conn ->
@@ -81,22 +78,22 @@ defmodule LogflareLogger.HttpBackendTest do
       body = JSON.decode!(body)
 
       assert %{
-        "batch" =>  [
+               "batch" => [
                  %{
-                 "level" => "info",
-                 "message" => @msg,
-                 "metadata" => %{
-                   "pid" => pidbinary,
-                   "module" => _,
-                   "file" => _,
-                   "line" => _,
-                   "function" => _
-                 },
-                 "timestamp" => _
-               }
-               | _
-             ]
-        }  = body
+                   "level" => "info",
+                   "message" => @msg,
+                   "metadata" => %{
+                     "pid" => pidbinary,
+                     "module" => _,
+                     "file" => _,
+                     "line" => _,
+                     "function" => _
+                   },
+                   "timestamp" => _
+                 }
+                 | _
+               ]
+             } = body
 
       assert is_binary(pidbinary)
 
