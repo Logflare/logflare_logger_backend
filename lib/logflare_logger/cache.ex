@@ -14,4 +14,7 @@ defmodule LogflareLogger.Cache do
   def reset_batch(key \\ @batch) do
     Cachex.put!(@cache, key, [])
   end
+  def config_url do
+    Application.get_env(:logflare_logger, :url)
+  end
 end

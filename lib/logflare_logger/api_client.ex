@@ -2,13 +2,12 @@ defmodule LogflareLogger.ApiClient do
   use Tesla
   alias Jason, as: JSON
 
-  def new(%{host: host, port: port}) do
-    middleware = [
-      {Tesla.Middleware.BaseUrl, "http://#{host}:#{port}"},
+  def new(url) do
+    [
+      {Tesla.Middleware.BaseUrl, url},
       Tesla.Middleware.JSON
     ]
-
-    Tesla.client(middleware)
+    |> Tesla.client()
   end
 
   def post_logs(client, batch) when is_list(batch) do

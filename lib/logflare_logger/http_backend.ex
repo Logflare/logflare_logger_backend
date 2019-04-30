@@ -77,15 +77,14 @@ defmodule LogflareLogger.HttpBackend do
   def terminate(_reason, _state), do: :ok
 
   defp configure(options, state) do
-    port = Keyword.get(options, :port, Cache.config_port())
-    host = Keyword.get(options, :host, Cache.config_host())
+    url = Keyword.get(options, :url, Cache.config_url())
     level = Keyword.get(options, :level, state.level)
     format = Keyword.get(options, :format, state.format)
     metadata = Keyword.get(options, :metadata, state.metadata)
     max_batch_size = Keyword.get(options, :max_batch_size, state.batch.max_size)
     flush_interval = Keyword.get(options, :flush_interval, state.flush.interval)
 
-    api_client = ApiClient.new(%{port: port, host: host})
+    api_client = ApiClient.new(url)
 
     %{
       api_client: api_client,
