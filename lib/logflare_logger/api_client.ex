@@ -1,10 +1,10 @@
 defmodule LogflareLogger.ApiClient do
   use Tesla
-  alias Jason, as: JSON
 
   def new(url) do
     [
       {Tesla.Middleware.BaseUrl, url},
+      {Tesla.Middleware.Compression, format: "gzip"},
       Tesla.Middleware.JSON
     ]
     |> Tesla.client()
