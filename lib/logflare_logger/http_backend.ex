@@ -93,7 +93,11 @@ defmodule LogflareLogger.HttpBackend do
       throw("API URL for LogflareLogger backend is NOT configured")
     end
 
-    api_client = ApiClient.new(url)
+    unless api_key do
+      throw("API key for LogflareLogger backend is NOT configured")
+    end
+
+    api_client = ApiClient.new(%{url: url, api_key: api_key})
 
     struct!(__MODULE__, %{
       api_client: api_client,
