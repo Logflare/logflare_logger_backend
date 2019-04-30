@@ -10,11 +10,13 @@ defmodule LogflareLogger.HttpBackendTest do
 
   @logger_backend HttpBackend
   @api_key "l3kh47jsakf2370dasg"
+  @source "source2354551"
 
   setup do
     bypass = Bypass.open(port: @port)
     Application.put_env(:logflare_logger, :url, "http://127.0.0.1:#{@port}")
     Application.put_env(:logflare_logger, :api_key, @api_key)
+    Application.put_env(:logflare_logger, :source, @source)
     Application.put_env(:logflare_logger, :level, :info)
     Application.put_env(:logflare_logger, :flush_interval, 500)
     Application.put_env(:logflare_logger, :max_batch_size, 100)
@@ -43,7 +45,8 @@ defmodule LogflareLogger.HttpBackendTest do
                    "timestamp" => _
                  }
                  | _
-               ]
+               ],
+               "source" => @source
              } = body
 
       assert length(body["batch"]) == 10
@@ -95,7 +98,8 @@ defmodule LogflareLogger.HttpBackendTest do
                    "timestamp" => _
                  }
                  | _
-               ]
+               ],
+               "source" => @source
              } = body
 
       assert is_binary(pidbinary)
