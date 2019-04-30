@@ -37,7 +37,7 @@ defmodule LogflareLogger.HttpBackend do
 
   def handle_event({level, _gl, {Logger, msg, datetime, metadata}}, state) do
     state =
-      if log_level_matches?(level, state.min_level) do
+      if log_level_matches?(level, state.level) do
         formatted = format_event(level, msg, datetime, metadata, state)
         state = update_batch(formatted, state)
 
@@ -76,30 +76,30 @@ defmodule LogflareLogger.HttpBackend do
 
   def terminate(_reason, _state), do: :ok
 
-  defp configure(options, _state) when is_list(options) do
-    port = Keyword.get(options, :port)
-    host = Keyword.get(options, :host)
-    level = Keyword.get(options, :level)
-    format = Keyword.get(options, :format)
-    metadata = Keyword.get(options, :metadata)
-    max_batch_size = Keyword.get(options, :max_batch_size)
+  defp configure(options, state) do
+    port = Keyword.get(options, :port, Cache.config_port())
+    host = Keyword.get(options, :host, Cache.config_host())
+    level = Keyword.get(options, :level, state.level)
+    format = Keyword.get(options, :format, state.format)
+    metadata = Keyword.get(options, :metadata, state.metadata)
+    max_batch_size = Keyword.get(options, :max_batch_size, state.batch.max_size)
+    flush_interval = Keyword.get(options, :flush_interval, state.flush.interval)
 
     api_client = ApiClient.new(%{port: port, host: host})
 
     %{
       api_client: api_client,
-      min_level: level,
+      level: level,
       format: format,
       metadata: metadata,
       batch: %{
-        size: 0,
-        max_size: max_batch_size || @default_batch_size
+        size: state.batch.size,
+        max_size: max_batch_size
+      },
+      flush: %{
+        interval: flush_interval
       }
     }
-  end
-
-  defp configure(:test, _state) do
-    %{}
   end
 
   # Batching and flushing
