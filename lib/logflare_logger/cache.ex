@@ -7,14 +7,17 @@ defmodule LogflareLogger.Cache do
   end
 
   def get_batch(key \\ @batch) do
-    Cachex.get!(@cache, key)
+    @cache
+    |> Cachex.get!(key)
+    |> list_if_nil()
     |> Enum.reverse()
   end
 
   def reset_batch(key \\ @batch) do
     Cachex.put!(@cache, key, [])
   end
-  def config_url do
-    Application.get_env(:logflare_logger, :url)
-  end
+
+  def list_if_nil(nil), do: []
+  def list_if_nil(xs), do: xs
+
 end
