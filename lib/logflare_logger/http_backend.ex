@@ -69,6 +69,10 @@ defmodule LogflareLogger.HttpBackend do
 
   def handle_call({:configure, options}, state) do
     state = configure(options, state)
+    # Makes sure that next flush is done
+    # after the configuration update
+    # if the flush interval is lower than default or previous config
+    schedule_flush(state)
     {:ok, :ok, state}
   end
 
