@@ -1,10 +1,25 @@
-defmodule LogflareLogger.Backend do
+defmodule LogflareLogger.HttpBackend do
   @moduledoc """
   Implements :gen_event behaviour, handles incoming Logger messages
   """
   @behaviour :gen_event
   @default_batch_size 1000
+  @default_flush_interval 500
+  require Logger
   alias LogflareLogger.{ApiClient, Formatter, Cache}
+
+  @default_config %{
+    level: :info,
+    format: {Formatter, :format},
+    metadata: [],
+    batch: %{
+      size: 0,
+      max_size: @default_batch_size
+    },
+    flush: %{
+      interval: @default_flush_interval
+    }
+  }
 
   # TypeSpecs
 
