@@ -25,8 +25,10 @@ defmodule LogflareLogger.HttpBackend do
 
   @type level :: Logger.level()
 
-  def init({__MODULE__, options}) do
-    {:ok, configure(options, [])}
+  def init(__MODULE__, options \\ []) when is_list(options) do
+    state = configure(options, @default_config)
+    schedule_flush(state)
+    {:ok, state}
   end
 
   def handle_event({_level, gl, _msg}, state) when node(gl) != node() do
@@ -56,11 +58,19 @@ defmodule LogflareLogger.HttpBackend do
     {:ok, state}
   end
 
-  def handle_call({:configure, options}, state) do
-    {:ok, :ok, configure(options, state)}
+  def handle_info(:flush, state) do
+    state = flush!(state)
+    {:ok, state}
   end
 
-  def handle_info(_, state), do: {:ok, state}
+  def handle_info(_term, state) do
+    {:ok, state}
+  end
+
+  def handle_call({:configure, options}, state) do
+    state = configure(options, state)
+    {:ok, :ok, state}
+  end
 
   def code_change(_old_vsn, state, _extra), do: {:ok, state}
 
@@ -103,14 +113,25 @@ defmodule LogflareLogger.HttpBackend do
     update_in(state.batch.size, &(&1 + 1))
   end
 
+  defp flush!(%{batch: %{size: 0}} = state) do
+    schedule_flush(state)
+    state
+  end
+
   defp flush!(state) do
     batch = Cache.get_batch()
 
-    if length(batch) > 0 do
-      {:ok, _} = ApiClient.post_logs(state.api_client, batch)
-      _ = Cache.reset_batch()
-      put_in(state.batch.size, 0)
-    end
+    {:ok, _} = ApiClient.post_logs(state.api_client, batch)
+
+    _ = Cache.reset_batch()
+    state = put_in(state.batch.size, 0)
+
+    schedule_flush(state)
+    state
+  end
+
+  defp schedule_flush(state) do
+    Process.send_after(self(), :flush, state.flush.interval)
   end
 
   # API
