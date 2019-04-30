@@ -6,6 +6,7 @@ defmodule LogflareLogger.HttpBackendTest do
 
   @host "127.0.0.1"
   @port 4444
+  @path ApiClient.api_path()
 
   @default_config [
     host: @host,
@@ -32,7 +33,7 @@ defmodule LogflareLogger.HttpBackendTest do
   test "logger backend sends a POST request", %{bypass: bypass, config: config} do
     log_msg = "Incoming log from test"
 
-    Bypass.expect(bypass, "POST", "/api/v0/elixir-logger", fn conn ->
+    Bypass.expect(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
 
       body = JSON.decode!(body)
@@ -74,7 +75,7 @@ defmodule LogflareLogger.HttpBackendTest do
 
     :ok = Logger.configure_backend(@logger_backend, metadata: :all)
 
-    Bypass.expect_once(bypass, "POST", "/api/v0/elixir-logger", fn conn ->
+    Bypass.expect_once(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
 
       body = JSON.decode!(body)

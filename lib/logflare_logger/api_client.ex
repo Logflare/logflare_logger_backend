@@ -11,8 +11,8 @@ defmodule LogflareLogger.ApiClient do
   end
 
   def post_logs(client, batch) when is_list(batch) do
-    Tesla.post(client, elixir_logger_path(), %{"batch" => batch}) 
+    Tesla.post(client, api_path(), %{"batch" => batch})
   end
 
-  def elixir_logger_path, do: "/api/v0/elixir-logger"
+  def api_path, do: "/api/v1/elixir/logger"
 end
