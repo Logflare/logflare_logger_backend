@@ -89,6 +89,10 @@ defmodule LogflareLogger.HttpBackend do
     batch_max_size = Keyword.get(options, :max_batch_size, state.batch_max_size)
     flush_interval = Keyword.get(options, :flush_interval, state.flush_interval)
 
+    unless url do
+      throw("API URL for LogflareLogger backend is NOT configured")
+    end
+
     api_client = ApiClient.new(url)
 
     struct!(__MODULE__, %{
