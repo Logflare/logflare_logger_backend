@@ -1,5 +1,6 @@
 defmodule LogflareLogger.ApiClient do
   use Tesla
+  alias LogflareLogger.Cache
 
   def new(%{url: url, api_key: api_key}) do
     [
@@ -12,7 +13,8 @@ defmodule LogflareLogger.ApiClient do
   end
 
   def post_logs(client, batch) when is_list(batch) do
-    Tesla.post(client, api_path(), %{"batch" => batch})
+    source = Cache.get_config(:source)
+    Tesla.post(client, api_path(), %{"batch" => batch, "source" => source})
   end
 
   def api_path, do: "/api/v1/elixir/logger"

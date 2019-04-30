@@ -79,10 +79,16 @@ defmodule LogflareLogger.HttpBackend do
 
   def terminate(_reason, _state), do: :ok
 
+  # Configuration values is populated according to the following priority list:
+  # 1. Dynamically confgiured options with Logger.configure(...)
+  # 2. Application environment
+  # 3. Current state
   defp configure_merge(options, state) do
     options = Keyword.merge(Application.get_all_env(:logflare_logger), options)
 
     url = Keyword.get(options, :url)
+    api_key = Keyword.get(options, :api_key)
+    source = Keyword.get(options, :source)
     level = Keyword.get(options, :level, state.level)
     format = Keyword.get(options, :format, state.format)
     metadata = Keyword.get(options, :metadata, state.metadata)
@@ -96,6 +102,12 @@ defmodule LogflareLogger.HttpBackend do
     unless api_key do
       throw("API key for LogflareLogger backend is NOT configured")
     end
+
+    unless source do
+      throw("API key for LogflareLogger backend is NOT configured")
+    end
+
+    Cache.put_config(:source, source)
 
     api_client = ApiClient.new(%{url: url, api_key: api_key})
 
