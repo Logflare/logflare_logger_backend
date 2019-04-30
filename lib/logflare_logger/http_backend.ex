@@ -97,15 +97,15 @@ defmodule LogflareLogger.HttpBackend do
     flush_interval = Keyword.get(options, :flush_interval, state.flush_interval)
 
     unless url do
-      throw("API URL for LogflareLogger backend is NOT configured")
+      throw("Logflare API URL for LogflareLogger backend is NOT configured")
     end
 
     unless api_key do
-      throw("API key for LogflareLogger backend is NOT configured")
+      throw("Logflare API key for LogflareLogger backend is NOT configured")
     end
 
     unless source do
-      throw("API key for LogflareLogger backend is NOT configured")
+      throw("Source parameter for LogflareLogger backend is NOT configured")
     end
 
     api_client = ApiClient.new(%{url: url, api_key: api_key})
