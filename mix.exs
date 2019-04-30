@@ -27,6 +27,7 @@ defmodule LogflareLogger.MixProject do
       {:bypass, "~> 1.0", only: :test},
       {:tesla, "~> 1.2.1"},
       {:cachex, "~> 3.1"}
+      {:typed_struct, ">= 0.0.0"}
     ]
   end
 end

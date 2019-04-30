@@ -8,7 +8,7 @@ defmodule LogflareLogger.HttpBackend do
   require Logger
   alias LogflareLogger.{ApiClient, Formatter, Cache}
 
-  @default_config %{
+  use TypedStruct
     level: :info,
     format: {Formatter, :format},
     metadata: [],
@@ -23,6 +23,15 @@ defmodule LogflareLogger.HttpBackend do
 
   # TypeSpecs
 
+  typedstruct do
+    field(:api_client, Tesla.Client.t())
+    field(:format, {atom, atom}, default: {Formatter, :format})
+    field(:level, atom, default: :info)
+    field(:metadata, list(atom), default: [])
+    field(:batch_max_size, non_neg_integer, default: @default_batch_size)
+    field(:batch_size, non_neg_integer, default: 0)
+    field(:flush_interval, non_neg_integer, default: @default_flush_interval)
+  end
   @type level :: Logger.level()
 
   def init(__MODULE__, options \\ []) when is_list(options) do
