@@ -85,7 +85,7 @@ defmodule LogflareLogger.HttpBackend do
   # 2. Application environment
   # 3. Current state
   defp configure_merge(options, state) do
-    options = Keyword.merge(Application.get_all_env(:logflare_logger), options)
+    options = :logflare_logger_backend |> Application.get_all_env() |> Keyword.merge(options)
 
     url = Keyword.get(options, :url)
     api_key = Keyword.get(options, :api_key)
