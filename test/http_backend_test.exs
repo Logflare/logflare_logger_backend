@@ -37,17 +37,19 @@ defmodule LogflareLogger.HttpBackendTest do
 
       body = JSON.decode!(body)
 
-      assert [
-               %{
-                 "level" => "info",
-                 "message" => "Incoming log from test " <> _,
-                 "metadata" => %{},
-                 "timestamp" => _
-               }
-               | _
-             ] = body
+      assert %{
+               "batch" => [
+                 %{
+                   "level" => "info",
+                   "message" => "Incoming log from test " <> _,
+                   "metadata" => %{},
+                   "timestamp" => _
+                 }
+                 | _
+               ]
+             } = body
 
-      assert length(body) == 10
+      assert length(body["batch"]) == 10
 
       Plug.Conn.resp(conn, 200, "")
     end)
@@ -76,8 +78,10 @@ defmodule LogflareLogger.HttpBackendTest do
       {:ok, body, conn} = Plug.Conn.read_body(conn)
 
       body = JSON.decode!(body)
-      assert [
-               %{
+
+      assert %{
+        "batch" =>  [
+                 %{
                  "level" => "info",
                  "message" => @msg,
                  "metadata" => %{
@@ -90,11 +94,12 @@ defmodule LogflareLogger.HttpBackendTest do
                  "timestamp" => _
                }
                | _
-             ] = body
+             ]
+        }  = body
 
       assert is_binary(pidbinary)
 
-      assert length(body) == 45
+      assert length(body["batch"]) == 45
 
       Plug.Conn.resp(conn, 200, "")
     end)
