@@ -4,12 +4,12 @@ defmodule LogflareLogger.CacheTest do
   @test_batch_key :test_batch
 
   test "cache puts events, gets events and resets batch" do
-    ev = %{metadata: %{}, message: "log1"}
+    ev1 = %{metadata: %{}, message: "log1"}
     ev2 = %{metadata: %{}, message: "log2"}
 
-    assert Cache.add_event_to_batch(ev, @test_batch_key) === [ev]
+    assert Cache.add_event_to_batch(ev1, @test_batch_key) === [ev1]
 
-    assert Cache.add_event_to_batch(ev2, @test_batch_key) === [ev, ev2]
+    assert Cache.add_event_to_batch(ev2, @test_batch_key) === [ev2, ev1]
 
     _ = Cache.reset_batch(@test_batch_key)
 
