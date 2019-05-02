@@ -26,6 +26,18 @@ defmodule LogflareLoggerTest do
     :ok = unset_context()
     assert context() == %{}
   end
-    assert context() == %{}
+
+  test "set context raises for invalid values" do
+    assert_raise FunctionClauseError, fn ->
+      set_context(nil)
+    end
+
+    assert_raise FunctionClauseError, fn ->
+      set_context(false)
+    end
+
+    assert_raise FunctionClauseError, fn ->
+      set_context(1_000)
+    end
   end
 end
