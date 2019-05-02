@@ -15,6 +15,17 @@ defmodule LogflareLoggerTest do
     :ok = unset_context(:advanced_logging)
     assert context() == %{}
   end
+
+  test "gets, sets and unsets multiple context keys" do
+    assert context() == %{}
+
+    assert set_context(key1: 1, key2: 2) == %{key1: 1, key2: 2}
+    assert set_context(key2: 3, key4: 4) == %{key1: 1, key2: 3, key4: 4}
+    assert context() == %{key1: 1, key2: 3, key4: 4}
+
+    :ok = unset_context()
+    assert context() == %{}
+  end
     assert context() == %{}
   end
 end
