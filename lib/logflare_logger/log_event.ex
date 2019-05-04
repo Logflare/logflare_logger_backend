@@ -8,6 +8,20 @@ defmodule LogflareLogger.LogEvent do
     field :timestamp, non_neg_integer(), enforce: true
   end
 
+  def new(timestamp, level, message, metadata \\ []) do
+    context =
+      %{}
+      |> add_context(:metadata, metadata)
+      |> add_context(:process)
+
+    %__MODULE__{
+      timestamp: timestamp,
+      level: level,
+      message: message,
+      context: context
+    }
+    |> encode_timestamp()
+  end
 
   defp add_context(context, :process) do
     Map.merge(context, LogflareLogger.context())
