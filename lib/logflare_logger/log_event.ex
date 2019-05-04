@@ -45,4 +45,24 @@ defmodule LogflareLogger.LogEvent do
 
     Map.merge(context, %{k => metadata})
   end
+
+  def encode_metadata(%{pid: pid} = metadata) when is_pid(pid) do
+    metadata.pid
+    |> update_in(&to_string(:erlang.pid_to_list(&1)))
+    |> encode_metadata()
+  end
+
+  def encode_metadata(event), do: event
+
+  def encode_timestamp(event) do
+    update_in(
+      event.timestamp,
+      fn ts ->
+        ts
+        |> Timex.to_naive_datetime()
+        |> Timex.to_datetime(Timex.Timezone.local())
+        |> Timex.format!("{ISO:Extended}")
+      end
+    )
+  end
 end
