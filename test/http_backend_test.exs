@@ -1,5 +1,5 @@
 defmodule LogflareLogger.HttpBackendTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias LogflareLogger.{HttpBackend, Formatter}
   alias LogflareLogger.ApiClient
   alias Jason, as: JSON
@@ -27,7 +27,9 @@ defmodule LogflareLogger.HttpBackendTest do
   end
 
   test "logger backend sends a POST request", %{bypass: bypass, config: config} do
+    :ok = Logger.configure_backend(@logger_backend, metadata: [])
     log_msg = "Incoming log from test"
+    LogflareLogger.set_context(test_context: %{some_metric: 1337})
 
     Bypass.expect(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
@@ -41,12 +43,15 @@ defmodule LogflareLogger.HttpBackendTest do
                  %{
                    "level" => level,
                    "message" => "Incoming log from test " <> _,
-                   "metadata" => %{},
+                   "context" => %{
+                     "metadata" => %{},
+                     "test_context" => %{"some_metric" => 1337}
+                   },
                    "timestamp" => _
                  }
                  | _
                ],
-               "source" => @source
+               "source_name" => @source
              } = body
 
       assert length(body["batch"]) == 10
@@ -66,6 +71,7 @@ defmodule LogflareLogger.HttpBackendTest do
     for n <- 1..10, do: Logger.debug(log_msg <> " ##{30 + n}")
 
     Process.sleep(1_000)
+    LogflareLogger.unset_context(:test_context)
   end
 
   test "doesn't POST log events with a lower level", %{bypass: _bypass, config: config} do
@@ -77,6 +83,7 @@ defmodule LogflareLogger.HttpBackendTest do
   @msg "Incoming log from test with all metadata"
   test "correctly handles metadata keys", %{bypass: bypass, config: config} do
     :ok = Logger.configure_backend(@logger_backend, metadata: :all)
+    LogflareLogger.set_context(test_context: %{some_metric: 7331})
 
     Bypass.expect_once(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
@@ -88,21 +95,22 @@ defmodule LogflareLogger.HttpBackendTest do
                  %{
                    "level" => "info",
                    "message" => @msg,
-                   "metadata" => %{
-                     "pid" => pidbinary,
-                     "module" => _,
-                     "file" => _,
-                     "line" => _,
-                     "function" => _
+                   "context" => %{
+                     "metadata" => %{
+                       "pid" => pidbinary,
+                       "module" => _,
+                       "file" => _,
+                       "line" => _,
+                       "function" => _
+                     },
+                     "test_context" => _
                    },
                    "timestamp" => _
                  }
                  | _
                ],
-               "source" => @source
+               "source_name" => @source
              } = body
-
-      assert is_binary(pidbinary)
 
       assert length(body["batch"]) == 45
 
@@ -114,5 +122,6 @@ defmodule LogflareLogger.HttpBackendTest do
     for n <- 1..45, do: Logger.info(log_msg)
 
     Process.sleep(1_000)
+    LogflareLogger.unset_context(:test_context)
   end
 end
