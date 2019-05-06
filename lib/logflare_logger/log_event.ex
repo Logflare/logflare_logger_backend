@@ -13,7 +13,23 @@ defmodule LogflareLogger.LogEvent do
   def new(timestamp, level, message, metadata \\ []) do
     {message, logflare_metadata} =
       case metadata[:crash_reason] do
-        {err, stacktrace} ->
+        {_err, stacktrace} ->
+          message =
+            if is_list(message) do
+              strings =
+                for m <- message do
+                  if is_integer(m) do
+                    to_string([m])
+                  else
+                    m
+                  end
+                end
+
+              Enum.join(strings)
+            else
+              message
+            end
+
           logflare_metadata =
             %{}
             |> add_context(:context, %{
@@ -23,7 +39,7 @@ defmodule LogflareLogger.LogEvent do
             |> add_context(:process, metadata)
             |> encode_metadata
 
-          {Exception.message(err), logflare_metadata}
+          {message, logflare_metadata}
 
         nil ->
           logflare_metadata =
