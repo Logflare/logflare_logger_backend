@@ -6,52 +6,51 @@ defmodule LogflareLogger.LogEvent do
   typedstruct do
     field :level, atom, enforce: true
     field :message, String.t(), enforce: true
-    field :context, map, default: %{}
+    field :metadata, map, default: %{}
     field :timestamp, non_neg_integer(), enforce: true
   end
 
   def new(timestamp, level, message, metadata \\ []) do
-    message_context =
+    {message, logflare_metadata} =
       case metadata[:crash_reason] do
         {err, stacktrace} ->
-          context =
-            %{
+          logflare_metadata =
+            %{}
+            |> add_context(:context, %{
               pid: metadata.pid,
               stacktrace: Stacktrace.format(stacktrace)
-            }
+            })
+            |> add_context(:process, metadata)
             |> encode_metadata
 
-          %{message: Exception.message(err), context: context}
+          {Exception.message(err), logflare_metadata}
 
         nil ->
-          context =
+          logflare_metadata =
             %{}
-            |> add_context(:metadata, metadata)
+            |> add_context(:context, metadata)
             |> add_context(:process, metadata)
 
-          %{message: message, context: context}
+          {message, logflare_metadata}
       end
 
     %__MODULE__{
       timestamp: timestamp,
       level: level,
-      message: message_context.message,
-      context: message_context.context
+      message: message,
+      metadata: logflare_metadata
     }
     |> encode_timestamp()
   end
 
-  defp add_context(context, :process, metadata) do
-    Map.merge(context, Map.drop(metadata, @default_meta_keys))
+  defp add_context(logflare_metadata, :process, metadata) do
+    Map.merge(logflare_metadata, Map.drop(metadata, @default_meta_keys))
   end
 
-  defp add_context(context, k = :metadata, metadata) do
-    metadata =
-      metadata
-      |> encode_metadata()
-      |> Map.take(@default_meta_keys)
+  defp add_context(logflare_metadata, k = :context, metadata) do
+    metadata = encode_metadata(metadata)
 
-    Map.merge(context, %{k => metadata})
+    Map.merge(logflare_metadata, %{k => metadata})
   end
 
   def encode_metadata(%{pid: pid} = metadata) when is_pid(pid) do
