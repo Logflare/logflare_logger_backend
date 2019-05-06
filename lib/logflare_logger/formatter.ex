@@ -10,8 +10,12 @@ defmodule LogflareLogger.Formatter do
         %{
           timestamp: Timex.to_unix(ts),
           level: "error",
-          message:
-            "Formatter encoding failed for message: #{inspect(message)} with error: #{inspect(e)}"
+          message: "Formatter error",
+          context: %{
+            formatter_error: inspect(e, safe: true),
+            message_to_format: inspect(message, safe: true),
+            metadata_to_format: inspect(metadata, safe: true),
+          }
         }
     end
   end
