@@ -1,7 +1,6 @@
 defmodule LogflareLogger.LogEvent do
   alias LogflareLogger.{Stacktrace, Utils}
   use TypedStruct
-  @default_meta_keys Utils.default_metadata_keys()
 
   typedstruct do
     field :level, atom, enforce: true
@@ -36,7 +35,6 @@ defmodule LogflareLogger.LogEvent do
               pid: metadata.pid,
               stacktrace: Stacktrace.format(stacktrace)
             })
-            |> add_context(:process, metadata)
             |> encode_metadata
 
           {message, logflare_metadata}
@@ -60,11 +58,12 @@ defmodule LogflareLogger.LogEvent do
   end
 
   defp add_context(logflare_metadata, :process, metadata) do
-    Map.merge(logflare_metadata, Map.drop(metadata, @default_meta_keys))
+    process = metadata |> Map.drop(Utils.default_metadata_keys())
+    Map.merge(logflare_metadata, process)
   end
 
   defp add_context(logflare_metadata, k = :context, metadata) do
-    metadata = encode_metadata(metadata)
+    metadata = metadata |> encode_metadata() |> Map.take(Utils.default_metadata_keys())
 
     Map.merge(logflare_metadata, %{k => metadata})
   end
