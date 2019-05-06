@@ -1,5 +1,5 @@
 defmodule LogflareLogger.LogEvent do
-  alias LogflareLogger.Utils
+  alias LogflareLogger.{Stacktrace, Utils}
   use TypedStruct
   @default_meta_keys Utils.default_metadata_keys()
 
@@ -11,16 +11,32 @@ defmodule LogflareLogger.LogEvent do
   end
 
   def new(timestamp, level, message, metadata \\ []) do
-    context =
-      %{}
-      |> add_context(:metadata, metadata)
-      |> add_context(:process, metadata)
+    message_context =
+      case metadata[:crash_reason] do
+        {err, stacktrace} ->
+          context =
+            %{
+              pid: metadata.pid,
+              stacktrace: Stacktrace.format(stacktrace)
+            }
+            |> encode_metadata
+
+          %{message: Exception.message(err), context: context}
+
+        nil ->
+          context =
+            %{}
+            |> add_context(:metadata, metadata)
+            |> add_context(:process, metadata)
+
+          %{message: message, context: context}
+      end
 
     %__MODULE__{
       timestamp: timestamp,
       level: level,
-      message: message,
-      context: context
+      message: message_context.message,
+      context: message_context.context
     }
     |> encode_timestamp()
   end
