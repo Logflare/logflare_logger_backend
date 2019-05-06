@@ -2,6 +2,7 @@ defmodule LogflareLogger.HttpBackend do
   @moduledoc """
   Implements :gen_event behaviour, handles incoming Logger messages
   """
+  alias LogflareLogger.Utils
   @behaviour :gen_event
   @default_batch_size 100
   @default_flush_interval 5000
@@ -165,13 +166,15 @@ defmodule LogflareLogger.HttpBackend do
          msg,
          ts,
          meta,
-         %{format: {Formatter, :format}, metadata: metakeys} = state
+         %{format: {Formatter, :format}, metadata: metakeys}
        )
        when is_list(metakeys) do
+    keys = Utils.default_metadata_keys() -- metakeys
+
     meta =
       meta
       |> Enum.into(%{})
-      |> Map.take(state.metadata)
+      |> Map.drop(keys)
 
     Formatter.format(level, msg, ts, meta)
   end

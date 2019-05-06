@@ -1,5 +1,7 @@
 defmodule LogflareLogger.LogEvent do
+  alias LogflareLogger.Utils
   use TypedStruct
+  @default_meta_keys Utils.default_metadata_keys()
 
   typedstruct do
     field :level, atom, enforce: true
@@ -12,7 +14,7 @@ defmodule LogflareLogger.LogEvent do
     context =
       %{}
       |> add_context(:metadata, metadata)
-      |> add_context(:process)
+      |> add_context(:process, metadata)
 
     %__MODULE__{
       timestamp: timestamp,
@@ -23,25 +25,15 @@ defmodule LogflareLogger.LogEvent do
     |> encode_timestamp()
   end
 
-  defp add_context(context, :process) do
-    Map.merge(context, LogflareLogger.context())
+  defp add_context(context, :process, metadata) do
+    Map.merge(context, Map.drop(metadata, @default_meta_keys))
   end
 
   defp add_context(context, k = :metadata, metadata) do
     metadata =
       metadata
       |> encode_metadata()
-      |> Map.take([
-        :application,
-        :module,
-        :function,
-        :file,
-        :line,
-        :pid,
-        :crash_reason,
-        :initial_call,
-        :registered_name
-      ])
+      |> Map.take(@default_meta_keys)
 
     Map.merge(context, %{k => metadata})
   end
