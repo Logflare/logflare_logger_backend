@@ -28,7 +28,9 @@ defmodule LogflareLogger.MixProject do
       {:tesla, "~> 1.2.1"},
       {:cachex, "~> 3.0"},
       {:timex, "~> 3.0"},
-      {:typed_struct, ">= 0.0.0"}
+      {:typed_struct, ">= 0.0.0"},
+      {:bertex, "~> 1.3"},
+      {:iteraptor, ">= 0.0.0"}
     ]
   end
 end
