@@ -36,15 +36,18 @@ defmodule LogflareLogger.HttpBackendTest do
 
       assert {"x-api-key", @api_key} in conn.req_headers
 
-      body = JSON.decode!(body)
+      body =
+        body
+        |> :zlib.gunzip()
+        |> Bertex.safe_decode()
 
       assert %{
                "batch" => [
                  %{
                    "level" => level,
                    "message" => "Incoming log from test " <> _,
-                   "context" => %{
-                     "metadata" => %{},
+                   "metadata" => %{
+                     "context" => %{},
                      "test_context" => %{"some_metric" => 1337}
                    },
                    "timestamp" => _
@@ -52,7 +55,7 @@ defmodule LogflareLogger.HttpBackendTest do
                  | _
                ],
                "source_name" => @source
-             } = body
+             } = IO.inspect(body)
 
       assert length(body["batch"]) == 10
       assert level in ["info", "error"]
@@ -88,15 +91,18 @@ defmodule LogflareLogger.HttpBackendTest do
     Bypass.expect_once(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
 
-      body = JSON.decode!(body)
+      body =
+        body
+        |> :zlib.gunzip()
+        |> Bertex.safe_decode()
 
       assert %{
                "batch" => [
                  %{
                    "level" => "info",
                    "message" => @msg,
-                   "context" => %{
-                     "metadata" => %{
+                   "metadata" => %{
+                     "context" => %{
                        "pid" => pidbinary,
                        "module" => _,
                        "file" => _,
