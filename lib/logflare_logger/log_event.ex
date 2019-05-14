@@ -9,26 +9,12 @@ defmodule LogflareLogger.LogEvent do
     field :timestamp, non_neg_integer(), enforce: true
   end
 
-  def new(timestamp, level, message, metadata \\ []) do
-    {message, logflare_metadata} =
+  def new(timestamp, level, message, metadata \\ %{}) do
+    message = message_to_string(message)
+
+    logflare_metadata =
       case metadata[:crash_reason] do
         {_err, stacktrace} ->
-          message =
-            if is_list(message) do
-              strings =
-                for m <- message do
-                  if is_integer(m) do
-                    to_string([m])
-                  else
-                    m
-                  end
-                end
-
-              Enum.join(strings)
-            else
-              message
-            end
-
           logflare_metadata =
             %{}
             |> add_context(:context, %{
@@ -37,7 +23,7 @@ defmodule LogflareLogger.LogEvent do
             })
             |> encode_metadata
 
-          {message, logflare_metadata}
+          logflare_metadata
 
         nil ->
           logflare_metadata =
@@ -45,7 +31,7 @@ defmodule LogflareLogger.LogEvent do
             |> add_context(:context, metadata)
             |> add_context(:process, metadata)
 
-          {message, logflare_metadata}
+          logflare_metadata
       end
 
     %__MODULE__{
@@ -57,13 +43,31 @@ defmodule LogflareLogger.LogEvent do
     |> encode_timestamp()
   end
 
+  def message_to_string(message) when is_binary(message), do: message
+
+  def message_to_string(message) when is_list(message) do
+    strings =
+      for m <- message do
+        if is_integer(m) do
+          to_string([m])
+        else
+          m
+        end
+      end
+
+    Enum.join(strings)
+  end
+
   defp add_context(logflare_metadata, :process, metadata) do
     process = metadata |> Map.drop(Utils.default_metadata_keys())
     Map.merge(logflare_metadata, process)
   end
 
   defp add_context(logflare_metadata, k = :context, metadata) do
-    metadata = metadata |> encode_metadata() |> Map.take(Utils.default_metadata_keys())
+    metadata =
+      metadata
+      |> encode_metadata()
+      |> Map.take(Utils.default_metadata_keys() ++ [:stacktrace])
 
     Map.merge(logflare_metadata, %{k => metadata})
   end
