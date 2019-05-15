@@ -1,24 +1,43 @@
-defmodule LogflareLogger.Cache do
+defmodule LogflareLogger.BatchCache do
   @batch :batch
   @cache __MODULE__
+  alias LogflareLogger.{ApiClient}
 
-  # Batching
-  def add_event_to_batch(event, key \\ @batch) do
-    Cachex.get_and_update!(@cache, key, &[event | &1 || []])
+  def put_initial do
+    Cachex.put!(@cache, @batch, %{
+      count: 0,
+      events: []
+    })
   end
 
-  def get_batch(key \\ @batch) do
-    @cache
-    |> Cachex.get!(key)
-    |> list_if_nil()
-    |> Enum.reverse()
+  def put(event, config) do
+    new_batch =
+      Cachex.get_and_update!(@cache, @batch, fn %{count: c, events: events} ->
+        %{count: c + 1, events: [event | events]}
+      end)
+
+    if new_batch.count >= config.batch_max_size do
+      flush(config)
+    end
   end
 
-  def reset_batch(key \\ @batch) do
-    Cachex.put!(@cache, key, [])
+  def flush(config) do
+    %{api_client: api_client, source: source} = config
+    batch = get!()
+
+    with true <- batch.count > 0,
+         {:ok, _} <- ApiClient.post_logs(api_client, batch.events, source) do
+      get_and_update!(fn %{count: c, events: events} ->
+        %{count: c - batch.count, events: events -- batch.events}
+      end)
+    end
   end
 
-  def list_if_nil(nil), do: []
-  def list_if_nil(xs), do: xs
+  defp get_and_update!(fun) do
+    Cachex.get_and_update!(@cache, @batch, fun)
+  end
 
+  defp get!() do
+    Cachex.get!(@cache, @batch)
+  end
 end
