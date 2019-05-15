@@ -7,8 +7,9 @@ defmodule LogflareLogger.HttpBackend do
   @default_batch_size 100
   @default_flush_interval 5000
   require Logger
-  alias LogflareLogger.{ApiClient, Formatter, Cache}
+  alias LogflareLogger.{ApiClient, Formatter, BatchCache, CLI}
 
+  alias __MODULE__, as: State
   use TypedStruct
 
   # TypeSpecs
@@ -32,30 +33,22 @@ defmodule LogflareLogger.HttpBackend do
     {:ok, config}
   end
 
-  def handle_event({_level, gl, _msg}, state) when node(gl) != node() do
+  def handle_event(:flush, state) do
+    state = flush!(state)
+    {:ok, state}
+  end
+
+  def handle_event({_, gl, _}, state) when node(gl) != node() do
     {:ok, state}
   end
 
   def handle_event({level, _gl, {Logger, msg, datetime, metadata}}, %__MODULE__{} = state) do
-    state =
-      if log_level_matches?(level, state.level) do
-        formatted = format_event(level, msg, datetime, metadata, state)
-        state = update_batch(formatted, state)
+    if log_level_matches?(level, state.level) do
+      formatted = format_event(level, msg, datetime, metadata, state)
 
-        if batch_ready?(state) do
-          flush!(state)
-        else
-          state
-        end
-      else
-        state
-      end
+      BatchCache.put(formatted, state)
+    end
 
-    {:ok, state}
-  end
-
-  def handle_event(:flush, state) do
-    state = flush!(state)
     {:ok, state}
   end
 
@@ -125,27 +118,8 @@ defmodule LogflareLogger.HttpBackend do
 
   # Batching and flushing
 
-  def batch_ready?(%__MODULE__{batch_size: size, batch_max_size: max_size}) do
-    size >= max_size
-  end
-
-  def update_batch(event, %__MODULE__{} = state) do
-    _ = Cache.add_event_to_batch(event)
-    update_in(state.batch_size, &(&1 + 1))
-  end
-
-  defp flush!(%__MODULE__{batch_size: 0} = state) do
-    schedule_flush(state)
-    state
-  end
-
   defp flush!(%__MODULE__{} = state) do
-    batch = Cache.get_batch()
-
-    {:ok, _} = ApiClient.post_logs(state.api_client, batch, state.source)
-
-    _ = Cache.reset_batch()
-    state = put_in(state.batch_size, 0)
+    BatchCache.flush(state)
 
     schedule_flush(state)
     state
