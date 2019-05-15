@@ -22,10 +22,29 @@ defmodule LogflareLogger.HttpBackendTest do
   end
 
   describe "HttpBackend.handle_event/2" do
-    test "new log message gets flushed within the interval", %{state: state} do
+    test "new log message gets flushed within the interval" do
+      {:ok, state} = HttpBackend.init(HttpBackend, @default_config)
       msg = {:info, nil, {Logger, "log message", 1, []}}
       {:ok, state} = HttpBackend.handle_event(msg, state)
       assert_receive :flush, @default_config[:flush_interval] + 10
     end
+
+    test "flush after max batch size" do
+      config = Keyword.put(@default_config, :flush_interval, 1000)
+      {:ok, state} = HttpBackend.init(HttpBackend, @default_config)
+      msg = {:info, nil, {Logger, "log message", ts(1), []}}
+
+      assert_receive :flush, 200
+
+      Enum.reduce(2..10, state, fn i, acc ->
+        msg = {:info, nil, {Logger, "log message", ts(i), []}}
+        {:ok, state} = HttpBackend.handle_event(msg, acc)
+        state
+      end)
+    end
+  end
+
+  defp ts(sec) do
+    {{2019, 1, 1}, {0, 0, sec, 0}}
   end
 end
