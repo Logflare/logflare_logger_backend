@@ -1,41 +1,53 @@
 defmodule Mix.Tasks.LogflareLogger.VerifyConfig do
+  alias LogflareLogger.{CLI, ApiClient}
   use Mix.Task
-  @app :logflare_logger
-  @app_name "LogflareLogger"
+  @app :logflare_logger_backend
 
   @impl Mix.Task
   def run(_args \\ []) do
+    IO.puts("You are verifying config for the #{Mix.env()} environment")
     {:ok, _} = Application.ensure_all_started(:logflare_logger_backend)
 
-    with {:api_key, true} <- {:api_key, api_key_set?()},
-         {:source, true} <- {:source, source_set?()} do
-      IO.puts("#{@app_name} configuration seems to be set correctly")
-    else
-      {:api_key, false} ->
-        IO.puts("#{@app_name} API key not set")
+    api_key = get_env(:api_key)
+    source_id = get_env(:source_id)
+    url = get_env(:url)
+    CLI.throw_on_missing_api_key!(api_key)
+    CLI.throw_on_missing_source!(source_id)
+    CLI.throw_on_missing_url!(url)
 
-      {:source, false} ->
-        IO.puts("#{@app_name} Source not set")
+    client = ApiClient.new(%{api_key: api_key, url: url})
+
+    result =
+      ApiClient.post_logs(
+        client,
+        [
+          %{
+            "message" => "LogflareLogger has been properly setup",
+            "metadata" => %{},
+            "level" => "info",
+            "timestamp" => NaiveDateTime.utc_now() |> NaiveDateTime.to_iso8601()
+          }
+        ],
+        source_id
+      )
+
+    case result do
+      {:ok, %{status: 200}} ->
+        IO.puts("Logflare API endpoint responded ok, check your log dashboard!")
+
+      {:ok, %{status: 404}} ->
+        IO.puts("HTTP request to Logflare API endpoint returned 404")
+
+      {:ok, %{status: 403}} ->
+        IO.puts("Logflare API endpoint responded with 403: Not Authorized")
+
+      {:error, tesla_env} ->
+        IO.puts("Unknown Error")
+        IO.puts(inspect(tesla_env))
     end
-  end
-
-  defp api_key_set? do
-    :api_key
-    |> get_env()
-    |> is_not_nil()
-  end
-
-  defp source_set? do
-    :source
-    |> get_env()
-    |> is_not_nil()
   end
 
   def get_env(key) do
     Application.get_env(@app, key)
-  end
-
-  def is_not_nil(arg) do
-    !is_nil(arg)
   end
 end
