@@ -12,7 +12,7 @@ defmodule LogflareLogger.Config do
     field :api_client, Tesla.Client.t()
     field :format, {atom, atom}, default: {Formatter, :format}
     field :level, atom, default: :info
-    field :source, String.t()
+    field :source_id, String.t()
     field :metadata, list(atom), default: :all
     field :batch_max_size, non_neg_integer, default: @default_batch_size
     field :batch_size, non_neg_integer, default: 0

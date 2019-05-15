@@ -68,24 +68,16 @@ defmodule LogflareLogger.HttpBackend do
 
     url = Keyword.get(options, :url)
     api_key = Keyword.get(options, :api_key)
-    source = Keyword.get(options, :source)
+    source_id = Keyword.get(options, :source_id)
     level = Keyword.get(options, :level, config.level)
     format = Keyword.get(options, :format, config.format)
     metadata = Keyword.get(options, :metadata, config.metadata)
     batch_max_size = Keyword.get(options, :max_batch_size, config.batch_max_size)
     flush_interval = Keyword.get(options, :flush_interval, config.flush_interval)
 
-    unless url do
-      throw("Logflare API URL for LogflareLogger backend is NOT configured")
-    end
-
-    unless api_key do
-      throw("Logflare API key for LogflareLogger backend is NOT configured")
-    end
-
-    unless source do
-      throw("Source parameter for LogflareLogger backend is NOT configured")
-    end
+    CLI.throw_on_missing_url!(url)
+    CLI.throw_on_missing_source!(source_id)
+    CLI.throw_on_missing_api_key!(api_key)
 
     api_client = ApiClient.new(%{url: url, api_key: api_key})
 
@@ -93,7 +85,7 @@ defmodule LogflareLogger.HttpBackend do
       Config,
       %{
         api_client: api_client,
-        source: source,
+        source_id: source_id,
         level: level,
         format: format,
         metadata: metadata,

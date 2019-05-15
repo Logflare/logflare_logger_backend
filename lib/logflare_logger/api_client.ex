@@ -12,9 +12,9 @@ defmodule LogflareLogger.ApiClient do
     |> Tesla.client()
   end
 
-  def post_logs(client, batch, source) when is_list(batch) do
+  def post_logs(client, batch, source_id) when is_list(batch) do
     body =
-      %{"batch" => batch, "source_name" => source}
+      %{"batch" => batch, "source" => source_id}
       |> Iteraptor.jsonify(values: true)
       |> Bertex.encode()
 

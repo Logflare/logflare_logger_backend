@@ -40,7 +40,7 @@ defmodule LogflareLogger.BatchCache do
     Cachex.get!(@cache, @batch)
   end
 
-  def post_logs(events, %{api_client: api_client, source: source}) do
+  def post_logs(events, %{api_client: api_client, source_id: source_id}) do
     mod =
       if Application.get_env(:logflare_env, :test_env)[:api_client] do
         ApiClientMock
@@ -48,6 +48,6 @@ defmodule LogflareLogger.BatchCache do
         ApiClient
       end
 
-    mod.post_logs(api_client, events, source)
+    mod.post_logs(api_client, events, source_id)
   end
 end
