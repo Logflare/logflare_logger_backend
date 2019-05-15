@@ -4,91 +4,76 @@ defmodule LogflareLogger.HttpBackend do
   """
   alias LogflareLogger.Utils
   @behaviour :gen_event
-  @default_batch_size 100
-  @default_flush_interval 5000
   require Logger
-  alias LogflareLogger.{ApiClient, Formatter, BatchCache, CLI}
-
-  alias __MODULE__, as: State
-  use TypedStruct
-
-  # TypeSpecs
-
-  typedstruct do
-    field(:api_client, Tesla.Client.t())
-    field(:format, {atom, atom}, default: {Formatter, :format})
-    field(:level, atom, default: :info)
-    field(:source, String.t())
-    field(:metadata, list(atom), default: :all)
-    field(:batch_max_size, non_neg_integer, default: @default_batch_size)
-    field(:batch_size, non_neg_integer, default: 0)
-    field(:flush_interval, non_neg_integer, default: @default_flush_interval)
-  end
+  alias LogflareLogger.{ApiClient, Formatter, BatchCache, CLI, Config}
 
   @type level :: Logger.level()
 
   def init(__MODULE__, options \\ []) when is_list(options) do
-    config = configure_merge(options, %__MODULE__{})
+    config = configure_merge(options, %Config{})
     schedule_flush(config)
     {:ok, config}
   end
 
-  def handle_event(:flush, state) do
-    state = flush!(state)
-    {:ok, state}
+  def handle_event(:flush, config) do
+    config = flush!(config)
+    {:ok, config}
   end
 
-  def handle_event({_, gl, _}, state) when node(gl) != node() do
-    {:ok, state}
+  def handle_event({_, gl, _}, config) when node(gl) != node() do
+    {:ok, config}
   end
 
-  def handle_event({level, _gl, {Logger, msg, datetime, metadata}}, %__MODULE__{} = state) do
-    if log_level_matches?(level, state.level) do
-      formatted = format_event(level, msg, datetime, metadata, state)
+  def handle_event({level, _gl, {Logger, msg, datetime, metadata}}, %Config{} = config) do
+    if log_level_matches?(level, config.level) do
+      formatted = format_event(level, msg, datetime, metadata, config)
 
-      BatchCache.put(formatted, state)
+      BatchCache.put(formatted, config)
     end
 
-    {:ok, state}
+    {:ok, config}
   end
 
-  def handle_info(:flush, state) do
-    state = flush!(state)
-    {:ok, state}
+  def handle_info(:flush, config) do
+    config = flush!(config)
+    {:ok, config}
   end
 
-  def handle_info(_term, state) do
-    {:ok, state}
+  def handle_info(_term, config) do
+    {:ok, config}
   end
 
-  def handle_call({:configure, options}, %__MODULE__{} = state) do
-    state = configure_merge(options, state)
+  def handle_call({:configure, options}, %Config{} = config) do
+    config = configure_merge(options, config)
     # Makes sure that next flush is done
     # after the configuration update
     # if the flush interval is lower than default or previous config
-    schedule_flush(state)
-    {:ok, :ok, state}
+    schedule_flush(config)
+    {:ok, :ok, config}
   end
 
-  def code_change(_old_vsn, state, _extra), do: {:ok, state}
+  def code_change(_old_vsn, config, _extra), do: {:ok, config}
 
   def terminate(_reason, _state), do: :ok
 
   # Configuration values is populated according to the following priority list:
   # 1. Dynamically confgiured options with Logger.configure(...)
   # 2. Application environment
-  # 3. Current state
-  defp configure_merge(options, state) do
-    options = :logflare_logger_backend |> Application.get_all_env() |> Keyword.merge(options)
+  # 3. Current config
+  defp configure_merge(options, %Config{} = config) when is_list(options) do
+    options =
+      :logflare_logger_backend
+      |> Application.get_all_env()
+      |> Keyword.merge(options)
 
     url = Keyword.get(options, :url)
     api_key = Keyword.get(options, :api_key)
     source = Keyword.get(options, :source)
-    level = Keyword.get(options, :level, state.level)
-    format = Keyword.get(options, :format, state.format)
-    metadata = Keyword.get(options, :metadata, state.metadata)
-    batch_max_size = Keyword.get(options, :max_batch_size, state.batch_max_size)
-    flush_interval = Keyword.get(options, :flush_interval, state.flush_interval)
+    level = Keyword.get(options, :level, config.level)
+    format = Keyword.get(options, :format, config.format)
+    metadata = Keyword.get(options, :metadata, config.metadata)
+    batch_max_size = Keyword.get(options, :max_batch_size, config.batch_max_size)
+    flush_interval = Keyword.get(options, :flush_interval, config.flush_interval)
 
     unless url do
       throw("Logflare API URL for LogflareLogger backend is NOT configured")
@@ -104,29 +89,32 @@ defmodule LogflareLogger.HttpBackend do
 
     api_client = ApiClient.new(%{url: url, api_key: api_key})
 
-    struct!(__MODULE__, %{
-      api_client: api_client,
-      source: source,
-      level: level,
-      format: format,
-      metadata: metadata,
-      batch_size: state.batch_size,
-      batch_max_size: batch_max_size,
-      flush_interval: flush_interval
-    })
+    struct!(
+      Config,
+      %{
+        api_client: api_client,
+        source: source,
+        level: level,
+        format: format,
+        metadata: metadata,
+        batch_size: config.batch_size,
+        batch_max_size: batch_max_size,
+        flush_interval: flush_interval
+      }
+    )
   end
 
   # Batching and flushing
 
-  defp flush!(%__MODULE__{} = state) do
-    BatchCache.flush(state)
+  defp flush!(%Config{} = config) do
+    BatchCache.flush(config)
 
-    schedule_flush(state)
-    state
+    schedule_flush(config)
+    config
   end
 
-  defp schedule_flush(%__MODULE__{} = state) do
-    Process.send_after(self(), :flush, state.flush_interval)
+  defp schedule_flush(%Config{} = config) do
+    Process.send_after(self(), :flush, config.flush_interval)
   end
 
   # Events
