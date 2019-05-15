@@ -2,6 +2,8 @@ defmodule LogflareLogger.BatchCache do
   @batch :batch
   @cache __MODULE__
   alias LogflareLogger.{ApiClient}
+  # batch limit prevents runaway memory usage if API is unresponsive
+  @batch_limit 10_000
 
   def put_initial do
     Cachex.put!(@cache, @batch, %{
@@ -13,7 +15,8 @@ defmodule LogflareLogger.BatchCache do
   def put(event, config) do
     new_batch =
       Cachex.get_and_update!(@cache, @batch, fn %{count: c, events: events} ->
-        %{count: c + 1, events: [event | events]}
+        events = Enum.take([event | events], @batch_limit)
+        %{count: c + 1, events: events}
       end)
 
     if new_batch.count >= config.batch_max_size do
@@ -24,11 +27,15 @@ defmodule LogflareLogger.BatchCache do
   def flush(config) do
     batch = get!()
 
-    with true <- batch.count > 0,
-         {:ok, _} <- post_logs(batch.events, config) do
+    with {:count, true} <- {:count, batch.count > 0},
+         {:api, {:ok, %Tesla.Env{status: 200}}} <- {:api, post_logs(batch.events, config)} do
       get_and_update!(fn %{count: c, events: events} ->
-        %{count: c - batch.count, events: events -- batch.events}
+        events = events -- batch.events
+        %{count: c - batch.count, events: events}
       end)
+    else
+      {:api, {_, _tesla_env}} -> :noop
+      {:count, _} -> :noop
     end
   end
 
