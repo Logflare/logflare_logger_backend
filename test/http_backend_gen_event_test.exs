@@ -15,7 +15,9 @@ defmodule LogflareLogger.HttpBackendTest do
   ]
 
   setup_all do
+    Application.put_env(:logflare_logger, :test_env, api_client: ApiClientMock)
     Mox.defmock(ApiClientMock, for: ApiClient)
+    on_exit(&BatchCache.put_initial/1)
     :ok
   end
 

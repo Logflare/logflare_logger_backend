@@ -22,11 +22,10 @@ defmodule LogflareLogger.BatchCache do
   end
 
   def flush(config) do
-    %{api_client: api_client, source: source} = config
     batch = get!()
 
     with true <- batch.count > 0,
-         {:ok, _} <- ApiClient.post_logs(api_client, batch.events, source) do
+         {:ok, _} <- post_logs(batch.events, config) do
       get_and_update!(fn %{count: c, events: events} ->
         %{count: c - batch.count, events: events -- batch.events}
       end)
@@ -37,12 +36,13 @@ defmodule LogflareLogger.BatchCache do
     Cachex.get_and_update!(@cache, @batch, fun)
   end
 
-  defp get!() do
+  def get!() do
     Cachex.get!(@cache, @batch)
   end
+
   def post_logs(events, %{api_client: api_client, source: source}) do
     mod =
-      if Mix.env() == :test do
+      if Application.get_env(:logflare_env, :test_env)[:api_client] do
         ApiClientMock
       else
         ApiClient
