@@ -1,11 +1,12 @@
 defmodule LogflareLogger.HttpBackendTest do
   use ExUnit.Case
-  alias LogflareLogger.{HttpBackend, Formatter}
+  alias LogflareLogger.{HttpBackend, Formatter, BatchCache, ApiClient}
+  import Mox
 
   @default_config [
     format: {Formatter, :format},
     min_level: :info,
-    flush_interval: 100,
+    flush_interval: 300,
     url: "http://localhost:4000/logs/elixir/logger",
     source: "source",
     api_key: "api_key",
@@ -40,17 +41,30 @@ defmodule LogflareLogger.HttpBackendTest do
       assert_receive :flush, @default_config[:flush_interval] + 10
     end
 
-    test "flush after max batch size" do
-      {:ok, state} = init_with_default()
+    test "flushes after batch reaches max_batch_size" do
+      expect(
+        ApiClientMock,
+        :post_logs,
+        fn client, batch, source ->
+          assert length(batch) == 10
+          {:ok, %{}}
+        end
+      )
+      {:ok, state} = init_with_default(flush_interval: 60_000)
       msg = {:info, nil, {Logger, "log message", ts(1), []}}
 
-      assert_receive :flush, @default_config[:flush_interval] + 10
+      Enum.reduce(
+        2..10,
+        state,
+        fn i, acc ->
+          msg = {:info, nil, {Logger, "log message", ts(i), []}}
+          {:ok, state} = HttpBackend.handle_event(msg, acc)
+          state
+        end
+      )
+    end
+  end
 
-      Enum.reduce(2..10, state, fn i, acc ->
-        msg = {:info, nil, {Logger, "log message", ts(i), []}}
-        {:ok, state} = HttpBackend.handle_event(msg, acc)
-        state
-      end)
   describe "HttpBackend.handle_info/2" do
     test "flushes after :flush msg" do
       {:ok, state} = init_with_default()
@@ -61,6 +75,11 @@ defmodule LogflareLogger.HttpBackendTest do
 
   defp init_with_default() do
     HttpBackend.init(HttpBackend, @default_config)
+  end
+
+  defp init_with_default(kw) do
+    config = Keyword.merge(@default_config, kw)
+    HttpBackend.init(HttpBackend, config)
   end
 
   defp ts(sec) do
