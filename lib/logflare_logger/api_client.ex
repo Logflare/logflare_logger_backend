@@ -5,7 +5,12 @@ defmodule LogflareLogger.ApiClient do
   def new(%{url: url, api_key: api_key}) do
     [
       Tesla.Middleware.FollowRedirects,
-      {Tesla.Middleware.Headers, [{"x-api-key", api_key}]},
+      {Tesla.Middleware.Headers,
+       [
+         {"x-api-key", api_key},
+         {"content-type", "application/bert"},
+         {"content-encoding", "gzip"}
+       ]},
       {Tesla.Middleware.BaseUrl, url},
       {Tesla.Middleware.Compression, format: "gzip"}
     ]
