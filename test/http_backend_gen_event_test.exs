@@ -22,6 +22,12 @@ defmodule LogflareLogger.HttpBackendTest do
   end
 
   describe "HttpBackend.handle_event/2" do
+    test "flushes after :flush msg" do
+      {:ok, state} = init_with_default()
+      {:ok, state} = HttpBackend.handle_event(:flush, state)
+      assert_receive :flush, @default_config[:flush_interval] + 10
+    end
+
     test "new log message gets flushed within the interval" do
       {:ok, state} = init_with_default()
       msg = {:info, nil, {Logger, "log message", ts(0), []}}
@@ -40,6 +46,11 @@ defmodule LogflareLogger.HttpBackendTest do
         {:ok, state} = HttpBackend.handle_event(msg, acc)
         state
       end)
+  describe "HttpBackend.handle_info/2" do
+    test "flushes after :flush msg" do
+      {:ok, state} = init_with_default()
+      {:ok, state} = HttpBackend.handle_info(:flush, state)
+      assert_receive :flush, @default_config[:flush_interval] + 10
     end
   end
 
