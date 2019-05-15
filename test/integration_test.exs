@@ -1,11 +1,11 @@
-defmodule LogflareLogger.HttpBackendTest do
-  use ExUnit.Case, async: true
-  alias LogflareLogger.{HttpBackend, Formatter}
+defmodule LogflareLogger.IntegrationTest do
+  use ExUnit.Case
+  @moduletag integration: true
+  alias LogflareLogger.{HttpBackend, Formatter, TestUtils}
   alias LogflareLogger.ApiClient
   alias Jason, as: JSON
   require Logger
 
-  @port 4444
   @path ApiClient.api_path()
 
   @logger_backend HttpBackend
@@ -13,15 +13,20 @@ defmodule LogflareLogger.HttpBackendTest do
   @source "source2354551"
 
   setup do
-    bypass = Bypass.open(port: @port)
-    Application.put_env(:logflare_logger_backend, :url, "http://127.0.0.1:#{@port}")
+    bypass = Bypass.open()
+    Application.put_env(:logflare_logger_backend, :url, "http://127.0.0.1:#{bypass.port}")
     Application.put_env(:logflare_logger_backend, :api_key, @api_key)
-    Application.put_env(:logflare_logger_backend, :source, @source)
+    Application.put_env(:logflare_logger_backend, :source_id, @source)
     Application.put_env(:logflare_logger_backend, :level, :info)
     Application.put_env(:logflare_logger_backend, :flush_interval, 500)
     Application.put_env(:logflare_logger_backend, :max_batch_size, 100)
 
     Logger.add_backend(@logger_backend)
+
+    on_exit(fn ->
+      LogflareLogger.unset_context(:test_context)
+      Logger.flush()
+    end)
 
     {:ok, bypass: bypass, config: %{}}
   end
@@ -36,10 +41,7 @@ defmodule LogflareLogger.HttpBackendTest do
 
       assert {"x-api-key", @api_key} in conn.req_headers
 
-      body =
-        body
-        |> :zlib.gunzip()
-        |> Bertex.safe_decode()
+      body = TestUtils.decode_logger_body(body)
 
       assert %{
                "batch" => [
@@ -54,8 +56,8 @@ defmodule LogflareLogger.HttpBackendTest do
                  }
                  | _
                ],
-               "source_name" => @source
-             } = IO.inspect(body)
+               "source" => @source
+             } = body
 
       assert length(body["batch"]) == 10
       assert level in ["info", "error"]
@@ -74,7 +76,6 @@ defmodule LogflareLogger.HttpBackendTest do
     for n <- 1..10, do: Logger.debug(log_msg <> " ##{30 + n}")
 
     Process.sleep(1_000)
-    LogflareLogger.unset_context(:test_context)
   end
 
   test "doesn't POST log events with a lower level", %{bypass: _bypass, config: config} do
@@ -91,10 +92,7 @@ defmodule LogflareLogger.HttpBackendTest do
     Bypass.expect_once(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
 
-      body =
-        body
-        |> :zlib.gunzip()
-        |> Bertex.safe_decode()
+      body = TestUtils.decode_logger_body(body)
 
       assert %{
                "batch" => [
@@ -115,7 +113,7 @@ defmodule LogflareLogger.HttpBackendTest do
                  }
                  | _
                ],
-               "source_name" => @source
+               "source" => @source
              } = body
 
       assert length(body["batch"]) == 45
@@ -128,6 +126,5 @@ defmodule LogflareLogger.HttpBackendTest do
     for n <- 1..45, do: Logger.info(log_msg)
 
     Process.sleep(1_000)
-    LogflareLogger.unset_context(:test_context)
   end
 end
