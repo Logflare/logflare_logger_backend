@@ -22,6 +22,8 @@ defmodule LogflareLogger.BatchCache do
     if new_batch.count >= config.batch_max_size do
       flush(config)
     end
+
+    new_batch 
   end
 
   def flush(config) do
@@ -34,8 +36,14 @@ defmodule LogflareLogger.BatchCache do
         %{count: c - batch.count, events: events}
       end)
     else
-      {:api, {_, _tesla_env}} -> :noop
-      {:count, _} -> :noop
+      {:api, {:error, _reason}} ->
+        :noop
+
+      {:api, {_, _tesla_env}} ->
+        :noop
+
+      {:count, _} ->
+        :noop
     end
   end
 

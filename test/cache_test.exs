@@ -1,18 +1,23 @@
-defmodule LogflareLogger.CacheTest do
+defmodule LogflareLogger.BatchCacheTest do
   use ExUnit.Case
-  alias LogflareLogger.Cache
+  alias LogflareLogger.{BatchCache, ApiClient}
   @test_batch_key :test_batch
+  @backend_config %{
+    api_client: ApiClient.new(%{url: "http://localhost:4000", api_key: ""}),
+    source_id: "source-id",
+    batch_max_size: 10
+  }
 
   test "cache puts events, gets events and resets batch" do
     ev1 = %{metadata: %{}, message: "log1"}
     ev2 = %{metadata: %{}, message: "log2"}
 
-    assert Cache.add_event_to_batch(ev1, @test_batch_key) === [ev1]
+    assert BatchCache.put(ev1, @backend_config) === %{count: 1, events: [ev1]}
 
-    assert Cache.add_event_to_batch(ev2, @test_batch_key) === [ev2, ev1]
+    assert BatchCache.put(ev2, @backend_config) === %{count: 2, events: [ev2, ev1]}
 
-    _ = Cache.reset_batch(@test_batch_key)
+    BatchCache.put_initial()
 
-    assert Cache.get_batch(@test_batch_key) === []
+    assert BatchCache.get!() === %{count: 0, events: []}
   end
 end
