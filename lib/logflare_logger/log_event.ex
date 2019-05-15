@@ -5,48 +5,51 @@ defmodule LogflareLogger.LogEvent do
   typedstruct do
     field :level, atom, enforce: true
     field :message, String.t(), enforce: true
-    field :metadata, map, default: %{}
+    field :context, map, default: %{}
     field :timestamp, non_neg_integer(), enforce: true
   end
 
-  def new(timestamp, level, message, %{crash_reason: cr} = metadata) when not is_nil(cr) do
-    message = message_to_string(message)
+  def new(ts, lvl, msg, meta) when is_list(msg) do
+    new(ts, lvl, message_to_string(msg), meta)
+  end
 
+  def new(ts, lvl, msg, meta) when is_tuple(ts) do
+    ts = encode_timestamp(ts)
+    new(ts, lvl, message_to_string(msg), meta)
+  end
+
+  def new(ts, lvl, msg, %{pid: pid} = meta) when is_pid(pid) do
+    meta = Map.update!(meta, :pid, &pid_to_string/1)
+    new(ts, lvl, message_to_string(msg), meta)
+  end
+
+  def new(ts, lvl, msg, %{crash_reason: cr} = meta) when not is_nil(cr) do
     {_err, stacktrace} = cr
 
-    logflare_metadata =
-      %{}
-      |> add_context(:context, %{
-        pid: metadata.pid,
-        stacktrace: Stacktrace.format(stacktrace)
-      })
+    meta =
+      meta
+      |> Map.drop([:crash_reason])
+      |> Map.merge(%{stacktrace: Stacktrace.format(stacktrace)})
 
-    build_and_encode(message, timestamp, level, logflare_metadata)
+    new(ts, lvl, message_to_string(msg), meta)
   end
 
   def new(timestamp, level, message, metadata) do
-    message = message_to_string(message)
+    {system_context, user_context} = Map.split(metadata, Utils.default_metadata_keys())
 
-    logflare_metadata =
-      %{}
-      |> add_context(:context, metadata)
-      |> add_context(:process, metadata)
-
-    build_and_encode(message, timestamp, level, logflare_metadata)
-  end
-
-  def build_and_encode(message, timestamp, level, metadata) do
     %__MODULE__{
       timestamp: timestamp,
       level: level,
       message: message,
-      metadata: metadata
+      context: %{
+        system: system_context,
+        user: user_context
+      }
     }
-    |> encode_timestamp()
-    |> encode_metadata()
   end
 
   def message_to_string(message) when is_binary(message), do: message
+
   def message_to_string(message) when is_list(message) do
     strings =
       for m <- message do
@@ -56,37 +59,18 @@ defmodule LogflareLogger.LogEvent do
     Enum.join(strings)
   end
 
-  defp add_context(logflare_metadata, :process, metadata) do
-    default = Utils.default_metadata_keys()
-    process = Map.drop(metadata, default)
-
-    Map.merge(logflare_metadata, process)
+  def pid_to_string(pid) when is_pid(pid) do
+    pid
+    |> :erlang.pid_to_list()
+    |> to_string()
   end
 
-  defp add_context(logflare_metadata, k = :context, metadata) do
-    default = Utils.default_metadata_keys()
-    metadata = Map.take(metadata,  default ++ [:stacktrace])
+  def prepare_logger_metadata(event), do: event
 
-    Map.merge(logflare_metadata, %{k => metadata})
-  end
-
-  def encode_metadata(%{pid: pid} = metadata) when is_pid(pid) do
-    metadata.pid
-    |> update_in(&to_string(:erlang.pid_to_list(&1)))
-    |> encode_metadata()
-  end
-
-  def encode_metadata(event), do: event
-
-  def encode_timestamp(event) do
-    update_in(
-      event.timestamp,
-      fn ts ->
-        ts
-        |> Timex.to_naive_datetime()
-        |> Timex.to_datetime(Timex.Timezone.local())
-        |> Timex.format!("{ISO:Extended}")
-      end
-    )
+  def encode_timestamp(ts) do
+    ts
+    |> Timex.to_naive_datetime()
+    |> Timex.to_datetime(Timex.Timezone.local())
+    |> Timex.format!("{ISO:Extended}")
   end
 end

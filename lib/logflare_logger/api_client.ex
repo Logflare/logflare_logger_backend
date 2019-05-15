@@ -21,12 +21,23 @@ defmodule LogflareLogger.ApiClient do
     body =
       %{"batch" => batch, "source" => source_id}
       |> Iteraptor.jsonify(values: true)
+      |> Map.update!("batch", &batch_to_payload/1)
       |> Bertex.encode()
 
-    Tesla.post(client, api_path(), body)
+    Tesla.post(client, api_path(), body) 
   end
 
-  def atoms_to_strings() do
+  def batch_to_payload(batch) do
+    for log_entry <- batch do
+      metadata =
+        %{}
+        |> Map.merge(log_entry["context"]["user"] || %{})
+        |> Map.put("context", log_entry["context"]["system"] || %{})
+
+      log_entry
+      |> Map.put("metadata", metadata)
+      |> Map.drop(["context"])
+    end
   end
 
   def api_path, do: "/logs/elixir/logger"
