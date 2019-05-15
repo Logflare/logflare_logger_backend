@@ -1,11 +1,10 @@
 defmodule LogflareLogger.ExceptionLoggingTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   alias LogflareLogger.{HttpBackend, Formatter}
   alias LogflareLogger.{ApiClient, TestUtils}
   alias Jason, as: JSON
   require Logger
 
-  @port 4444
   @path ApiClient.api_path()
 
   @logger_backend HttpBackend
@@ -13,10 +12,11 @@ defmodule LogflareLogger.ExceptionLoggingTest do
   @source "source2354551"
 
   setup do
-    bypass = Bypass.open(port: @port)
-    Application.put_env(:logflare_logger_backend, :url, "http://127.0.0.1:#{@port}")
+    port = 44444
+    bypass = Bypass.open(port: port)
+    Application.put_env(:logflare_logger_backend, :url, "http://127.0.0.1:#{port}")
     Application.put_env(:logflare_logger_backend, :api_key, @api_key)
-    Application.put_env(:logflare_logger_backend, :source, @source)
+    Application.put_env(:logflare_logger_backend, :source_id, @source)
     Application.put_env(:logflare_logger_backend, :level, :info)
     Application.put_env(:logflare_logger_backend, :flush_interval, 500)
     Application.put_env(:logflare_logger_backend, :max_batch_size, 100)
@@ -42,17 +42,20 @@ defmodule LogflareLogger.ExceptionLoggingTest do
                  %{
                    "level" => level,
                    "message" => message,
-                   "context" => %{
-                     "stacktrace" => stacktrace,
-                     "pid" => _
+                   "metadata" => %{
+                     "context" => %{
+                       "pid" => _
+                     },
+                     "stacktrace" => stacktrace
                    },
                    "timestamp" => _
                  }
                  | _
                ],
-               "source_name" => @source
+               "source" => @source
              } = body
 
+      assert is_list(stacktrace)
       Plug.Conn.resp(conn, 200, "")
     end)
 

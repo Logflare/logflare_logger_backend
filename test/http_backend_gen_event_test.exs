@@ -8,7 +8,7 @@ defmodule LogflareLogger.HttpBackendTest do
     min_level: :info,
     flush_interval: 300,
     url: "http://localhost:4000/logs/elixir/logger",
-    source: "source",
+    source_id: "source",
     api_key: "api_key",
     max_batch_size: 10,
     metadata: []
@@ -17,7 +17,7 @@ defmodule LogflareLogger.HttpBackendTest do
   setup_all do
     Application.put_env(:logflare_logger, :test_env, api_client: ApiClientMock)
     Mox.defmock(ApiClientMock, for: ApiClient)
-    on_exit(&BatchCache.put_initial/1)
+    on_exit(&BatchCache.put_initial/0)
     :ok
   end
 
@@ -52,6 +52,7 @@ defmodule LogflareLogger.HttpBackendTest do
           {:ok, %{}}
         end
       )
+
       {:ok, state} = init_with_default(flush_interval: 60_000)
       msg = {:info, nil, {Logger, "log message", ts(1), []}}
 

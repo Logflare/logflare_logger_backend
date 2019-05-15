@@ -1,5 +1,5 @@
 defmodule LogflareLogger.ApiClientTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   alias LogflareLogger.ApiClient
   alias LogflareLogger.TestUtils
   require Logger
@@ -8,7 +8,7 @@ defmodule LogflareLogger.ApiClientTest do
   @path ApiClient.api_path()
 
   @api_key "l3kh47jsakf2370dasg"
-  @source "source2354551"
+  @source_id "source2354551"
 
   setup do
     bypass = Bypass.open(port: @port)
@@ -29,11 +29,13 @@ defmodule LogflareLogger.ApiClientTest do
                    "level" => "info",
                    "message" => "Logger message",
                    "metadata" => %{
-                     "file" => "not_existing.ex"
+                     "context" => %{
+                       "file" => "not_existing.ex"
+                     }
                    }
                  }
                ],
-               "source_name" => @source
+               "source" => @source_id
              } = body
 
       Plug.Conn.resp(conn, 200, "ok")
@@ -45,13 +47,15 @@ defmodule LogflareLogger.ApiClientTest do
       %{
         "level" => "info",
         "message" => "Logger message",
-        "metadata" => %{
-          "file" => "not_existing.ex"
+        "context" => %{
+          "system" => %{
+            "file" => "not_existing.ex"
+          }
         }
       }
     ]
 
-    {:ok, %{body: body}} = ApiClient.post_logs(client, batch, @source)
+    {:ok, %{body: body}} = ApiClient.post_logs(client, batch, @source_id)
 
     assert body == "ok"
   end
