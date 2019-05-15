@@ -1,6 +1,8 @@
 defmodule LogflareLogger.ApiClient do
   use Tesla
-  @callback post_logs(Tesla.Client.t, list(map), String.t) :: {:ok, Tesla.Env.t} | {:error, term}
+
+  @callback post_logs(Tesla.Client.t(), list(map), String.t()) ::
+              {:ok, Tesla.Env.t()} | {:error, term}
 
   def new(%{url: url, api_key: api_key}) do
     [
