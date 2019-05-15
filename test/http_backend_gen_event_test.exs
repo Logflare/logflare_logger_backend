@@ -15,7 +15,7 @@ defmodule LogflareLogger.HttpBackendTest do
 
   describe "HttpBackend.init/2" do
     test "succeeds with correct config" do
-      {:ok, state} = HttpBackend.init(HttpBackend, @default_config)
+      {:ok, state} = init_with_default()
       assert state.level == :info
       assert_receive :flush, @default_config[:flush_interval] + 10
     end
@@ -23,18 +23,17 @@ defmodule LogflareLogger.HttpBackendTest do
 
   describe "HttpBackend.handle_event/2" do
     test "new log message gets flushed within the interval" do
-      {:ok, state} = HttpBackend.init(HttpBackend, @default_config)
-      msg = {:info, nil, {Logger, "log message", 1, []}}
+      {:ok, state} = init_with_default()
+      msg = {:info, nil, {Logger, "log message", ts(0), []}}
       {:ok, state} = HttpBackend.handle_event(msg, state)
       assert_receive :flush, @default_config[:flush_interval] + 10
     end
 
     test "flush after max batch size" do
-      config = Keyword.put(@default_config, :flush_interval, 1000)
-      {:ok, state} = HttpBackend.init(HttpBackend, @default_config)
+      {:ok, state} = init_with_default()
       msg = {:info, nil, {Logger, "log message", ts(1), []}}
 
-      assert_receive :flush, 200
+      assert_receive :flush, @default_config[:flush_interval] + 10
 
       Enum.reduce(2..10, state, fn i, acc ->
         msg = {:info, nil, {Logger, "log message", ts(i), []}}
@@ -42,6 +41,10 @@ defmodule LogflareLogger.HttpBackendTest do
         state
       end)
     end
+  end
+
+  defp init_with_default() do
+    HttpBackend.init(HttpBackend, @default_config)
   end
 
   defp ts(sec) do
