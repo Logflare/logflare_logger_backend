@@ -5,10 +5,12 @@ defmodule LogflareLogger.Application do
 
   def start(_type, _args) do
     children = [
-      {Cachex, LogflareLogger.Cache}
+      {Cachex, LogflareLogger.BatchCache}
     ]
 
     opts = [strategy: :one_for_one, name: LogflareLogger.Supervisor]
-    Supervisor.start_link(children, opts)
+    {:ok, pid} = Supervisor.start_link(children, opts)
+    LogflareLogger.BatchCache.put_initial()
+    {:ok, pid}
   end
 end
