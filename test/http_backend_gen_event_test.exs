@@ -13,6 +13,11 @@ defmodule LogflareLogger.HttpBackendTest do
     metadata: []
   ]
 
+  setup_all do
+    Mox.defmock(ApiClientMock, for: ApiClient)
+    :ok
+  end
+
   describe "HttpBackend.init/2" do
     test "succeeds with correct config" do
       {:ok, state} = init_with_default()

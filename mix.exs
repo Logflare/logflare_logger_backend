@@ -30,7 +30,8 @@ defmodule LogflareLogger.MixProject do
       {:timex, "~> 3.0"},
       {:typed_struct, ">= 0.0.0"},
       {:bertex, "~> 1.3"},
-      {:iteraptor, ">= 0.0.0"}
+      {:iteraptor, ">= 0.0.0"},
+      {:mox, "~> 0.5"}
     ]
   end
 end

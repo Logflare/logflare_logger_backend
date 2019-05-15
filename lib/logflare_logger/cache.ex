@@ -40,4 +40,14 @@ defmodule LogflareLogger.BatchCache do
   defp get!() do
     Cachex.get!(@cache, @batch)
   end
+  def post_logs(events, %{api_client: api_client, source: source}) do
+    mod =
+      if Mix.env() == :test do
+        ApiClientMock
+      else
+        ApiClient
+      end
+
+    mod.post_logs(api_client, events, source)
+  end
 end
