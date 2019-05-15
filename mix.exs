@@ -6,6 +6,7 @@ defmodule LogflareLogger.MixProject do
       app: :logflare_logger_backend,
       version: "0.3.0",
       elixir: "~> 1.8",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
@@ -18,6 +19,9 @@ defmodule LogflareLogger.MixProject do
       mod: {LogflareLogger.Application, []}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do

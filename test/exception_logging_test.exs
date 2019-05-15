@@ -1,7 +1,7 @@
 defmodule LogflareLogger.ExceptionLoggingTest do
   use ExUnit.Case, async: true
   alias LogflareLogger.{HttpBackend, Formatter}
-  alias LogflareLogger.ApiClient
+  alias LogflareLogger.{ApiClient, TestUtils}
   alias Jason, as: JSON
   require Logger
 
@@ -35,7 +35,7 @@ defmodule LogflareLogger.ExceptionLoggingTest do
 
       assert {"x-api-key", @api_key} in conn.req_headers
 
-      body = JSON.decode!(body)
+      body = TestUtils.decode_logger_body(body)
 
       assert %{
                "batch" => [

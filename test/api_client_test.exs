@@ -1,6 +1,7 @@
 defmodule LogflareLogger.ApiClientTest do
   use ExUnit.Case, async: true
   alias LogflareLogger.ApiClient
+  alias LogflareLogger.TestUtils
   require Logger
 
   @port 4444
@@ -20,10 +21,7 @@ defmodule LogflareLogger.ApiClientTest do
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       assert {"x-api-key", @api_key} in conn.req_headers
 
-      body =
-        body
-        |> :zlib.gunzip()
-        |> Bertex.safe_decode()
+      body = TestUtils.decode_logger_body(body)
 
       assert %{
                "batch" => [
