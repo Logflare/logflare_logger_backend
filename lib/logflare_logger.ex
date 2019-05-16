@@ -3,45 +3,45 @@ defmodule LogflareLogger do
   """
 
   @doc """
-  Adds log entry context to the current process
+  Merges map or keyword with the context in the process dictionary
   """
-  @spec set_context(map() | keyword()) :: map()
-  def set_context(map) when is_map(map) do
-    set_context(Keyword.new(map))
+  @spec merge_context(map() | keyword()) :: map()
+  def merge_context(map) when is_map(map) do
+    map
+    |> Keyword.new()
+    |> merge_context()
   end
 
-  def set_context(keyword) do
+  def merge_context(keyword) when is_list(keyword) do
     Logger.metadata(keyword)
-    context()
+    get_context()
   end
 
   @doc """
-  Deletes a key from context saved in the current process.
-
-  The second parameter indicates which context you want the key to be removed from.
+  If key is passed, deletes context entry from the process dictionary. Otherwise deletes all context.
   """
-  @spec unset_context() :: :ok
-  def unset_context() do
+  @spec delete_context() :: :ok
+  def delete_context() do
     Logger.reset_metadata()
   end
 
-  @spec unset_context(atom) :: :ok
-  def unset_context(key) do
+  @spec delete_context(atom) :: :ok
+  def delete_context(key) do
     Logger.metadata([{key, nil}])
   end
 
   @doc """
-  Gets the current context
+  Get context in the process dictionary.
   """
-  @spec context() :: Context.t()
-  def context() do
-    case Logger.metadata() do
-      [] ->
-        %{}
+  @spec get_context() :: map()
+  def get_context() do
+    Logger.metadata()
+    |> Map.new()
+  end
 
-      meta ->
-        meta
-        |> Map.new()
-    end
+  @spec get_context(atom) :: map()
+  def get_context(key) do
+    get_context()
+    |> Map.get(key)
   end
 end
