@@ -1,4 +1,5 @@
 defmodule LogflareLogger.Utils do
+  @moduledoc false
   def default_metadata_keys do
     [
       :application,

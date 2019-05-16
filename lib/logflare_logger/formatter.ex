@@ -1,4 +1,5 @@
 defmodule LogflareLogger.Formatter do
+  @moduledoc false
   alias LogflareLogger.LogEvent
 
   def format(level, message, ts, metadata) do
@@ -8,13 +9,15 @@ defmodule LogflareLogger.Formatter do
     rescue
       e ->
         %{
-          timestamp: Timex.to_unix(ts),
+          timestamp: NaiveDateTime.utc_now() |> NaiveDateTime.to_iso8601(),
           level: "error",
-          message: "Formatter error",
+          message: "LogflareLogger formatter error",
           context: %{
-            formatter_error: inspect(e, safe: true),
-            message_to_format: inspect(message, safe: true),
-            metadata_to_format: inspect(metadata, safe: true),
+            formatter: %{
+              error: inspect(e, safe: true),
+              message: inspect(message, safe: true),
+              metadata: inspect(metadata, safe: true)
+            }
           }
         }
     end
