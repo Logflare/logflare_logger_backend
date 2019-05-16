@@ -1,4 +1,9 @@
 defmodule LogflareLogger.BatchCache do
+  @moduledoc """
+  Caches the batch, dispatches API post request if the batch is larger than configured max batch size or flush is called.
+
+  Doesn't error or drop the message if the API is unresponsive, holds them
+  """
   @batch :batch
   @cache __MODULE__
   alias LogflareLogger.{ApiClient}
@@ -16,14 +21,22 @@ defmodule LogflareLogger.BatchCache do
     new_batch =
       Cachex.get_and_update!(@cache, @batch, fn %{count: c, events: events} ->
         events = Enum.take([event | events], @batch_limit)
-        %{count: c + 1, events: events}
+
+        count =
+          if c + 1 > @batch_limit do
+            @batch_limit
+          else
+            c + 1
+          end
+
+        %{count: count, events: events}
       end)
 
     if new_batch.count >= config.batch_max_size do
       flush(config)
     end
 
-    new_batch 
+    new_batch
   end
 
   def flush(config) do
