@@ -2,23 +2,28 @@ defmodule LogflareLogger.HttpBackend do
   @moduledoc """
   Implements :gen_event behaviour, handles incoming Logger messages
   """
+  @app :logflare_logger_backend
   alias LogflareLogger.Utils
   @behaviour :gen_event
   require Logger
-  alias LogflareLogger.{ApiClient, Formatter, BatchCache, CLI, Config}
+  alias LogflareLogger.{ApiClient, Formatter, BatchCache, CLI}
+  alias LogflareLogger.BackendConfig, as: Config
 
   @type level :: Logger.level()
+  @type message :: Logger.message()
+  @type metadata :: Logger.metadata()
 
+  @type log_msg :: {level, pid, {Logger, message, term, metadata}} | :flush
+
+  @spec init(__MODULE__, keyword) :: {:ok, Config.t()}
   def init(__MODULE__, options \\ []) when is_list(options) do
-    config = configure_merge(options, %Config{})
-    schedule_flush(config)
-    {:ok, config}
+    options
+    |> configure_merge(%Config{})
+    |> schedule_flush()
   end
 
-  def handle_event(:flush, config) do
-    config = flush!(config)
-    {:ok, config}
-  end
+  @spec handle_event(log_msg, Config.t()) :: {:ok, Config.t()}
+  def handle_event(:flush, config), do: flush!(config)
 
   def handle_event({_, gl, _}, config) when node(gl) != node() do
     {:ok, config}
@@ -26,22 +31,17 @@ defmodule LogflareLogger.HttpBackend do
 
   def handle_event({level, _gl, {Logger, msg, datetime, metadata}}, %Config{} = config) do
     if log_level_matches?(level, config.level) do
-      format_event(level, msg, datetime, metadata, config)
-      |> BatchCache.put(config)
+      log_event = format_event(level, msg, datetime, metadata, config)
+      BatchCache.put(log_event, config)
     end
 
     {:ok, config}
   end
 
-  def handle_info(:flush, config) do
-    config = flush!(config)
-    {:ok, config}
-  end
+  def handle_info(:flush, config), do: flush!(config)
+  def handle_info(_term, config), do: {:ok, config}
 
-  def handle_info(_term, config) do
-    {:ok, config}
-  end
-
+  @spec handle_call({:configure, keyword()}, Config.t()) :: {:ok, :ok, Config.t()}
   def handle_call({:configure, options}, %Config{} = config) do
     config = configure_merge(options, config)
     # Makes sure that next flush is done
@@ -55,13 +55,14 @@ defmodule LogflareLogger.HttpBackend do
 
   def terminate(_reason, _state), do: :ok
 
-  # Configuration values is populated according to the following priority list:
-  # 1. Dynamically confgiured options with Logger.configure(...)
-  # 2. Application environment
-  # 3. Current config
+  @spec configure_merge(keyword, Config.t()) :: Config.t()
   defp configure_merge(options, %Config{} = config) when is_list(options) do
+    # Configuration values are populated according to the following priorities:
+    # 1. Dynamically confgiured options with Logger.configure(...)
+    # 2. Application environment
+    # 3. Current config
     options =
-      :logflare_logger_backend
+      @app
       |> Application.get_all_env()
       |> Keyword.merge(options)
 
@@ -97,15 +98,17 @@ defmodule LogflareLogger.HttpBackend do
 
   # Batching and flushing
 
+  @spec flush!(Config.t()) :: {:ok, Config.t()}
   defp flush!(%Config{} = config) do
     BatchCache.flush(config)
 
     schedule_flush(config)
-    config
   end
 
+  @spec schedule_flush(Config.t()) :: {:ok, Config.t()}
   defp schedule_flush(%Config{} = config) do
     Process.send_after(self(), :flush, config.flush_interval)
+    {:ok, config}
   end
 
   # Events
@@ -133,10 +136,6 @@ defmodule LogflareLogger.HttpBackend do
   end
 
   defp format_event(level, msg, ts, meta, %Config{metadata: :all}) do
-    meta =
-      meta
-      |> Enum.into(%{})
-
-    Formatter.format(level, msg, ts, meta)
+    Formatter.format(level, msg, ts, Map.new(meta))
   end
 end
