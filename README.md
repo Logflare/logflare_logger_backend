@@ -20,6 +20,26 @@ config :logflare_logger_backend,
   max_batch_size: 50 # maximum number of events before a log batch is sent to the server
 ```
 
+## Usage
+
+After configuring LogflareLogger use `Logger` functions to send log events to Logflare app.
+
+## Usage with context
+
+```
+# Merges map or keyword with existing context, will overwrite values.
+LogflareLogger.merge_context(%{user: %{id: 3735928559}})
+LogflareLogger.merge_context(user: %{id: 3735928559})
+
+# Get all context entries or a value for a specific key
+LogflareLogger.get_context(:user)
+LogflareLogger.get_context()
+
+# Deletes all context entries or specific context key/value
+LogflareLogger.delete_context(:user)
+LogflareLogger.delete_context()
+```
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
