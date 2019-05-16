@@ -49,10 +49,12 @@ defmodule LogflareLogger.BatchCache do
         %{count: c - batch.count, events: events}
       end)
     else
-      {:api, {:error, _reason}} ->
+      {:api, {:error, reason}} ->
+        IO.warn("Logflare API error: #{inspect(reason)}")
         :noop
 
-      {:api, {_, _tesla_env}} ->
+      {:api, {_, tesla_env}} ->
+        IO.warn("Logflare API response status is #{tesla_env.status}. Error: #{inspect(tesla_env)}")
         :noop
 
       {:count, _} ->
