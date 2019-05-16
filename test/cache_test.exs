@@ -1,4 +1,5 @@
 defmodule LogflareLogger.BatchCacheTest do
+  @moduledoc false
   use ExUnit.Case
   alias LogflareLogger.{BatchCache, ApiClient}
   @test_batch_key :test_batch

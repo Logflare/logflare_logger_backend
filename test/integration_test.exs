@@ -1,4 +1,5 @@
 defmodule LogflareLogger.IntegrationTest do
+  @moduledoc false
   use ExUnit.Case
   @moduletag integration: true
   alias LogflareLogger.{HttpBackend, Formatter, TestUtils}
@@ -24,17 +25,17 @@ defmodule LogflareLogger.IntegrationTest do
     Logger.add_backend(@logger_backend)
 
     on_exit(fn ->
-      LogflareLogger.unset_context(:test_context)
-      Logger.flush()
+      LogflareLogger.delete_context(:test_context)
+      Logger.remove_backend(@logger_backend, flush: true)
     end)
 
-    {:ok, bypass: bypass, config: %{}}
+    {:ok, bypass: bypass}
   end
 
-  test "logger backend sends a POST request", %{bypass: bypass, config: config} do
+  test "logger backend sends a POST request", %{bypass: bypass} do
     :ok = Logger.configure_backend(@logger_backend, metadata: [])
     log_msg = "Incoming log from test"
-    LogflareLogger.set_context(test_context: %{some_metric: 1337})
+    LogflareLogger.merge_context(test_context: %{some_metric: 1337})
 
     Bypass.expect(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
@@ -78,16 +79,16 @@ defmodule LogflareLogger.IntegrationTest do
     Process.sleep(1_000)
   end
 
-  test "doesn't POST log events with a lower level", %{bypass: _bypass, config: config} do
+  test "doesn't POST log events with a lower level", %{bypass: _bypass} do
     log_msg = "Incoming log from test"
 
     :ok = Logger.debug(log_msg)
   end
 
   @msg "Incoming log from test with all metadata"
-  test "correctly handles metadata keys", %{bypass: bypass, config: config} do
+  test "correctly handles metadata keys", %{bypass: bypass} do
     :ok = Logger.configure_backend(@logger_backend, metadata: :all)
-    LogflareLogger.set_context(test_context: %{some_metric: 7331})
+    LogflareLogger.merge_context(test_context: %{some_metric: 7331})
 
     Bypass.expect_once(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)

@@ -1,8 +1,13 @@
 defmodule LogflareLoggerTest do
+  @moduledoc false
   use ExUnit.Case
   import LogflareLogger
   doctest LogflareLogger
 
+  setup do
+    on_exit(&LogflareLogger.delete_context/0)
+  end
+  
   test "gets, sets and unsets one context key" do
     assert get_context() == %{}
 
