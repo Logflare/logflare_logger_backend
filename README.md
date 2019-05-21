@@ -2,6 +2,8 @@
 
 An Elixir Logger backend for [Logflare](https://github.com/Logflare/logflare). Streams logs to the [Logflare.app](https://logflare.app) API or self-hosted Logflare app.
 
+This package is under active development and not yet ready for production usage.
+
 # Configuration
 
 Get your `api_key` and create up a `source` at [logflare.app](https://logflare.app)
