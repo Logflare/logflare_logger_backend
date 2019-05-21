@@ -8,7 +8,7 @@ Get your `api_key` and create up a `source` at [logflare.app](https://logflare.a
 
 You will need **source_id** which is also **source token**.
 
-```
+```elixir
 config :logger,
   backends: [LogflareLogger.HttpBackend],
 
