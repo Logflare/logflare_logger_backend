@@ -26,7 +26,7 @@ After configuring LogflareLogger in `config.exs`, use `Logger.info, Logger.error
 
 ## Usage with context
 
-```
+```elixir
 # Merges map or keyword with existing context, will overwrite values.
 LogflareLogger.merge_context(%{user: %{id: 3735928559}})
 LogflareLogger.merge_context(user: %{id: 3735928559})
