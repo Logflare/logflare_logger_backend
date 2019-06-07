@@ -26,7 +26,7 @@ defmodule LogflareLogger.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:mix_test_watch, ">= 0.9.0"},
+      {:mix_test_watch, ">= 0.9.0", only: :dev, runtime: false},
       {:jason, "~> 1.0"},
       {:bypass, "~> 1.0", only: :test},
       {:tesla, "~> 1.2.1"},
@@ -35,7 +35,7 @@ defmodule LogflareLogger.MixProject do
       {:typed_struct, ">= 0.0.0"},
       {:bertex, "~> 1.3"},
       {:iteraptor, ">= 0.0.0"},
-      {:mox, "~> 0.5"}
+      {:mox, "~> 0.5", only: :test}
     ]
   end
 end
