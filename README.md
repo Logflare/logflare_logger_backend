@@ -12,14 +12,14 @@ You will need **source_id** which you can copy from your dashboard.
 
 ```elixir
 config :logger,
-  backends: [LogflareLogger.HttpBackend],
+  level: :info, # or other Logger level,
+  backends: [LogflareLogger.HttpBackend]
 
 config :logflare_logger_backend,
   url: "http://logflare.app", # http://logflare.app is configured by defaul and you can set your own url
   api_key: "...",
   source_id: "...",
-  level: :info, # or other Logger level,
-  flush_interval: 1_000 # minimum time in ms before a log batch is sent to the server ",
+  flush_interval: 1_000, # minimum time in ms before a log batch is sent to the server ",
   max_batch_size: 50 # maximum number of events before a log batch is sent to the server
 ```
 
