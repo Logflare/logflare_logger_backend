@@ -15,6 +15,7 @@ config :logger,
   backends: [LogflareLogger.HttpBackend],
 
 config :logflare_logger_backend,
+  url: "http://logflare.app", # http://logflare.app is configured by defaul and you can set your own url
   api_key: "...",
   source_id: "...",
   level: :info, # or other Logger level,
