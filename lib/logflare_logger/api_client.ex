@@ -13,7 +13,6 @@ defmodule LogflareLogger.ApiClient do
        [
          {"x-api-key", api_key},
          {"content-type", "application/bert"},
-         {"content-encoding", "gzip"}
        ]},
       {Tesla.Middleware.BaseUrl, url},
       {Tesla.Middleware.Compression, format: "gzip"}

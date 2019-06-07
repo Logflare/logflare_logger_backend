@@ -35,7 +35,8 @@ defmodule LogflareLogger.MixProject do
       {:typed_struct, ">= 0.0.0"},
       {:bertex, "~> 1.3"},
       {:iteraptor, ">= 0.0.0"},
-      {:mox, "~> 0.5", only: :test}
+      {:mox, "~> 0.5", only: :test},
+      {:hackney, "~> 1.10"}
     ]
   end
 end
