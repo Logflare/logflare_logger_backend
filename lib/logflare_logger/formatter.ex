@@ -11,7 +11,7 @@ defmodule LogflareLogger.Formatter do
         %{
           timestamp: NaiveDateTime.utc_now() |> NaiveDateTime.to_iso8601(),
           level: "error",
-          message: "LogflareLogger formatter error",
+          message: "LogflareLogger formatter error: #{inspect(e, safe: true)}",
           context: %{
             formatter: %{
               error: inspect(e, safe: true),
