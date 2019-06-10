@@ -20,7 +20,7 @@ defmodule LogflareLogger do
   end
 
   def log(level, message, metadata) do
-    datetime = Timex.now() |> Timex.to_erl()
+    datetime = Timex.now() |> Timex.to_datetime(Timex.Timezone.local()) |> Timex.to_erl()
     config = HttpBackend.configure_merge([], %LogflareLogger.BackendConfig{})
     log_event = HttpBackend.format_event(level, message, datetime, metadata, config)
     BatchCache.put(log_event, config)
