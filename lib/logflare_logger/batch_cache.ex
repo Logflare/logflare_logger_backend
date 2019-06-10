@@ -42,23 +42,18 @@ defmodule LogflareLogger.BatchCache do
   def flush(config) do
     batch = get!()
 
-    with {:count, true} <- {:count, batch.count > 0},
-         {:api, {:ok, %Tesla.Env{status: 200}}} <- {:api, post_logs(batch.events, config)} do
-      get_and_update!(fn %{count: c, events: events} ->
-        events = events -- batch.events
-        %{count: c - batch.count, events: events}
-      end)
-    else
-      {:api, {:error, reason}} ->
-        IO.warn("Logflare API error: #{inspect(reason)}")
-        :noop
+    if batch.count > 0 do
+      case post_logs(batch.events, config) do
+        {:ok, %Tesla.Env{status: _}} ->
+          get_and_update!(fn %{count: c, events: events} ->
+            events = events -- batch.events
+            %{count: c - batch.count, events: events}
+          end)
 
-      {:api, {_, tesla_env}} ->
-        IO.warn("Logflare API response status is #{tesla_env.status}. Error: #{inspect(tesla_env)}")
-        :noop
-
-      {:count, _} ->
-        :noop
+        {:error, reason} ->
+          IO.warn("Logflare API error: #{inspect(reason)}")
+          :noop
+      end
     end
   end
 
