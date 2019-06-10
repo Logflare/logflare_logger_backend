@@ -3,19 +3,19 @@ defmodule LogflareLogger do
   """
   alias LogflareLogger.{HttpBackend, BatchCache}
 
-  def debug(message, metadata) do
+  def debug(message, metadata \\ []) do
     log(:debug, message, metadata)
   end
 
-  def info(message, metadata) do
+  def info(message, metadata \\ []) do
     log(:info, message, metadata)
   end
 
-  def warn(message, metadata) do
+  def warn(message, metadata \\ []) do
     log(:warn, message, metadata)
   end
 
-  def error(message, metadata) do
+  def error(message, metadata \\ []) do
     log(:error, message, metadata)
   end
 
