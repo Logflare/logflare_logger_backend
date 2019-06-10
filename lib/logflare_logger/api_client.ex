@@ -14,7 +14,7 @@ defmodule LogflareLogger.ApiClient do
       {Tesla.Middleware.Headers,
        [
          {"x-api-key", api_key},
-         {"content-type", "application/bert"},
+         {"content-type", "application/bert"}
        ]},
       {Tesla.Middleware.BaseUrl, url},
       {Tesla.Middleware.Compression, format: "gzip"}
@@ -42,6 +42,7 @@ defmodule LogflareLogger.ApiClient do
         %{}
         |> Map.merge(log_entry["context"]["user"] || %{})
         |> Map.put("context", log_entry["context"]["system"] || %{})
+        |> LogflareLogger.LogEvent.encode_metadata_charlists()
 
       log_entry
       |> Map.put("metadata", metadata)
