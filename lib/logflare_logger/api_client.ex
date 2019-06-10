@@ -1,6 +1,8 @@
 defmodule LogflareLogger.ApiClient do
   @moduledoc false
   use Tesla, only: [:post], docs: false
+  adapter Tesla.Adapter.Hackney, pool: __MODULE__
+
   @default_api_path "/logs/elixir/logger"
 
   @callback post_logs(Tesla.Client.t(), list(map), String.t()) ::
