@@ -36,7 +36,8 @@ defmodule LogflareLogger.MixProject do
       {:bertex, "~> 1.3"},
       {:iteraptor, ">= 0.0.0"},
       {:mox, "~> 0.5", only: :test},
-      {:hackney, "~> 1.10"}
+      {:hackney, "~> 1.10"},
+      {:placebo, "~> 1.2"}
     ]
   end
 end
