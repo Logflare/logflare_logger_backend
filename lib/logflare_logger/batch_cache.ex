@@ -20,7 +20,9 @@ defmodule LogflareLogger.BatchCache do
   def put(event, config) do
     new_batch =
       Cachex.get_and_update!(@cache, @batch, fn %{count: c, events: events} ->
-        events = Enum.take([event | events], @batch_limit)
+        events =
+          [event | events]
+          |> Enum.take(@batch_limit)
 
         count =
           if c + 1 > @batch_limit do
@@ -43,7 +45,10 @@ defmodule LogflareLogger.BatchCache do
     batch = get!()
 
     if batch.count > 0 do
-      case post_logs(batch.events, config) do
+      batch.events
+      |> Enum.reverse()
+      |> post_logs(config)
+      |> case do
         {:ok, %Tesla.Env{status: _}} ->
           get_and_update!(fn %{count: c, events: events} ->
             events = events -- batch.events
