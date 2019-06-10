@@ -58,7 +58,10 @@ defmodule LogflareLogger.LogEvent do
              is_binary(message) and
              is_atom(level) and
              is_map(metadata) do
-    {system_context, user_context} = Map.split(metadata, @default_metadata_keys)
+    {system_context, user_context} =
+      metadata
+      |> encode_metadata_charlists()
+      |> Map.split(@default_metadata_keys)
 
     %__MODULE__{
       timestamp: timestamp,
@@ -69,6 +72,19 @@ defmodule LogflareLogger.LogEvent do
         user: user_context
       }
     }
+  end
+
+  def encode_metadata_charlists(metadata) do
+    for {k, v} <- metadata, into: Map.new() do
+      v =
+        cond do
+          is_map(v) -> encode_metadata_charlists(v)
+          is_list(v) and List.ascii_printable?(v) -> to_string(v)
+          true -> v
+        end
+
+      {k, v}
+    end
   end
 
   defp message_to_string(message) when is_binary(message), do: message
