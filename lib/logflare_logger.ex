@@ -1,6 +1,30 @@
 defmodule LogflareLogger do
   @moduledoc """
   """
+  alias LogflareLogger.{HttpBackend, BatchCache}
+
+  def debug(message, metadata) do
+    log(:debug, message, metadata)
+  end
+
+  def info(message, metadata) do
+    log(:info, message, metadata)
+  end
+
+  def warn(message, metadata) do
+    log(:warn, message, metadata)
+  end
+
+  def error(message, metadata) do
+    log(:error, message, metadata)
+  end
+
+  def log(level, message, metadata) do
+    datetime = Timex.now() |> Timex.to_erl()
+    config = HttpBackend.configure_merge([], %LogflareLogger.BackendConfig{})
+    log_event = HttpBackend.format_event(level, message, datetime, metadata, config)
+    BatchCache.put(log_event, config)
+  end
 
   @doc """
   Merges map or keyword with the context in the process dictionary

@@ -56,7 +56,7 @@ defmodule LogflareLogger.HttpBackend do
   def terminate(_reason, _state), do: :ok
 
   @spec configure_merge(keyword, Config.t()) :: Config.t()
-  defp configure_merge(options, %Config{} = config) when is_list(options) do
+  def configure_merge(options, %Config{} = config) when is_list(options) do
     # Configuration values are populated according to the following priorities:
     # 1. Dynamically confgiured options with Logger.configure(...)
     # 2. Application environment
@@ -117,7 +117,7 @@ defmodule LogflareLogger.HttpBackend do
   defp log_level_matches?(_lvl, nil), do: true
   defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
 
-  defp format_event(
+  def format_event(
          level,
          msg,
          ts,
@@ -135,7 +135,7 @@ defmodule LogflareLogger.HttpBackend do
     Formatter.format(level, msg, ts, meta)
   end
 
-  defp format_event(level, msg, ts, meta, %Config{metadata: :all}) do
+  def format_event(level, msg, ts, meta, %Config{metadata: :all}) do
     Formatter.format(level, msg, ts, Map.new(meta))
   end
 end
