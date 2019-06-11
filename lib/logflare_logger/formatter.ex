@@ -4,8 +4,7 @@ defmodule LogflareLogger.Formatter do
 
   def format(level, message, ts, metadata) do
     try do
-      LogEvent.new(ts, level, message, metadata)
-      |> Map.from_struct()
+      LogEvent.encode(ts, level, message, metadata)
     rescue
       e ->
         %{

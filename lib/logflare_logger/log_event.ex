@@ -8,6 +8,13 @@ defmodule LogflareLogger.LogEvent do
   @doc """
   Creates a LogEvent struct when all fields have serializable values
   """
+  def encode(timestamp, level, message, metadata) do
+    new(timestamp, level, message, metadata)
+    |> to_payload()
+    |> jsonify()
+    |> encode_metadata_charlists()
+  end
+
   def new(timestamp, level, message, metadata) do
     log =
       %{
@@ -45,7 +52,7 @@ defmodule LogflareLogger.LogEvent do
   def encode_timestamp(%{timestamp: t} = log) when is_tuple(t) do
     timestamp =
       t
-      # |> Timex.to_naive_datetime()
+      |> Timex.to_naive_datetime()
       |> Timex.to_datetime(Timex.Timezone.local())
       |> Timex.format!("{ISO:Extended}")
 
@@ -88,12 +95,36 @@ defmodule LogflareLogger.LogEvent do
 
   def encode_crash_reason(meta), do: meta
 
+
+  @doc """
+  jsonify deeply converts all keywords to maps and all atoms to strings
+  for Logflare server to be able to safely convert binary to terms
+  using :erlang.binary_to_term(binary, [:safe])
+  """
+  def jsonify(log) do
+    Iteraptor.jsonify(log, values: true)
+  end
+
+  def to_payload(log) do
+    metadata =
+      %{}
+      |> Map.merge(log.context[:user] || %{})
+      |> Map.put(:context, log.context[:system] || %{})
+      |> LogflareLogger.LogEvent.encode_metadata_charlists()
+
+    log
+    |> Map.put(:metadata, metadata)
+    |> Map.drop([:context])
+  end
+
   def encode_metadata_charlists(metadata) do
     for {k, v} <- metadata, into: Map.new() do
       v =
         cond do
           is_map(v) -> encode_metadata_charlists(v)
           is_list(v) and List.ascii_printable?(v) -> to_string(v)
+          is_list(v) -> Enum.map(v, &encode_metadata_charlists/1)
+          # TODO: iterate over tuples
           true -> v
         end
 
