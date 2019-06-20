@@ -21,7 +21,7 @@ defmodule LogflareLogger do
 
   def log(level, message, metadata) do
     datetime = Timex.now() |> Timex.to_datetime(Timex.Timezone.local()) |> Timex.to_erl()
-    config = HttpBackend.configure_merge([], %LogflareLogger.BackendConfig{})
+    config = BatchCache.get_config()
     metadata = Logger.metadata() ++ metadata
 
     log_event = HttpBackend.format_event(level, message, datetime, metadata, config)

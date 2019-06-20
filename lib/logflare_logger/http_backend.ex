@@ -81,7 +81,7 @@ defmodule LogflareLogger.HttpBackend do
 
     api_client = ApiClient.new(%{url: url, api_key: api_key})
 
-    struct!(
+    config = struct!(
       Config,
       %{
         api_client: api_client,
@@ -94,6 +94,8 @@ defmodule LogflareLogger.HttpBackend do
         flush_interval: flush_interval
       }
     )
+    BatchCache.put_config(config)
+    config
   end
 
   # Batching and flushing
