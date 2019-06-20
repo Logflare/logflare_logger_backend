@@ -11,7 +11,6 @@ defmodule LogflareLogger.LogParams do
   def encode(timestamp, level, message, metadata) do
     new(timestamp, level, message, metadata)
     |> to_payload()
-    |> jsonify()
   end
 
   def new(timestamp, level, message, metadata) do
@@ -95,31 +94,40 @@ defmodule LogflareLogger.LogParams do
 
   def encode_crash_reason(meta), do: meta
 
-  @doc """
-  jsonify deeply converts all keywords to maps and all atoms to strings
-  for Logflare server to be able to safely convert binary to terms
-  using :erlang.binary_to_term(binary, [:safe])
-  """
-  def jsonify(log) do
-    Iteraptor.jsonify(log, values: true)
+  def traverse_convert(%{__struct__: _} = v) do
+    v |> Map.from_struct() |> traverse_convert()
   end
-
-  def traverse_convert(%{__struct__: _} = v), do: v |> Map.from_struct() |> traverse_convert()
 
   def traverse_convert(data) when is_map(data) do
     for {k, v} <- data, into: Map.new() do
-      {k, traverse_convert(v)}
+      {traverse_convert(k), traverse_convert(v)}
     end
   end
 
   def traverse_convert(xs) when is_list(xs) do
-    if length(xs) > 0 and List.ascii_printable?(xs) do
-      to_string(xs)
-    else
-      for x <- xs, do: traverse_convert(x)
+    cond do
+      Keyword.keyword?(xs) ->
+        xs
+        |> Enum.into(Map.new())
+        |> traverse_convert()
+
+      length(xs) > 0 and List.ascii_printable?(xs) ->
+        to_string(xs)
+
+      true ->
+        for x <- xs, do: traverse_convert(x)
     end
   end
 
-  def traverse_convert(x) when is_tuple(x), do: Tuple.to_list(x) |> traverse_convert()
+  def traverse_convert(x) when is_tuple(x) do
+    x |> Tuple.to_list() |> traverse_convert()
+  end
+
+  @doc """
+  All atoms are converted to strings for Logflare server to be able
+  to safely convert binary to terms using :erlang.binary_to_term(binary, [:safe])
+  """
+  def traverse_convert(x) when is_atom(x), do: Atom.to_string(x)
+
   def traverse_convert(x), do: x
 end

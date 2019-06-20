@@ -34,6 +34,14 @@ defmodule LogflareLogger.LogParamsTest do
       x = to_string(x)
       assert user_context === %{"charlist" => %{x => [x, %{x => [x, x]}]}}
     end
+
+    test "converts keywords to maps" do
+      x = [a: 2, b: [a: 6]]
+      user_context = build_user_context(%{keyword: %{1 => [x, %{two: {x, x}}]}})
+
+      x = %{"a" => 2, "b" => %{"a" => 6}}
+      assert user_context === %{"keyword" => %{1 => [x, %{"two" => [x, x]}]}}
+    end
   end
 
   def build_user_context(metadata) do
