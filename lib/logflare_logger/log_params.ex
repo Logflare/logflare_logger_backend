@@ -129,5 +129,37 @@ defmodule LogflareLogger.LogParams do
 
       {k, v}
     end
+  def convert_tuples(data) when is_map(data) do
+    data
+    |> Enum.map(fn
+      {k, v} when is_tuple(v) ->
+        {k,
+         v
+         |> Tuple.to_list()
+         |> convert_tuples()}
+
+      {k, v} when is_map(v) when is_list(v) ->
+        {k, convert_tuples(v)}
+
+      {k, v} ->
+        {k, v}
+    end)
+    |> Enum.into(Map.new())
+  end
+
+  def convert_tuples(data) when is_list(data) do
+    data
+    |> Enum.map(fn
+      el when is_tuple(el) ->
+        el
+        |> Tuple.to_list()
+        |> convert_tuples()
+
+      el when is_map(el) when is_map(el) ->
+        convert_tuples(el)
+
+      el ->
+        el
+    end)
   end
 end
