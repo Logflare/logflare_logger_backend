@@ -1,4 +1,4 @@
-defmodule LogflareLogger.LogEvent do
+defmodule LogflareLogger.LogParams do
   @moduledoc """
   Parses and encodes incoming Logger messages for further serialization.
   """
@@ -6,7 +6,7 @@ defmodule LogflareLogger.LogEvent do
   @default_metadata_keys Utils.default_metadata_keys()
 
   @doc """
-  Creates a LogEvent struct when all fields have serializable values
+  Creates a LogParams struct when all fields have serializable values
   """
   def encode(timestamp, level, message, metadata) do
     new(timestamp, level, message, metadata)
@@ -95,7 +95,6 @@ defmodule LogflareLogger.LogEvent do
 
   def encode_crash_reason(meta), do: meta
 
-
   @doc """
   jsonify deeply converts all keywords to maps and all atoms to strings
   for Logflare server to be able to safely convert binary to terms
@@ -110,7 +109,7 @@ defmodule LogflareLogger.LogEvent do
       %{}
       |> Map.merge(log.context[:user] || %{})
       |> Map.put(:context, log.context[:system] || %{})
-      |> LogflareLogger.LogEvent.encode_metadata_charlists()
+      |> encode_metadata_charlists()
 
     log
     |> Map.put(:metadata, metadata)

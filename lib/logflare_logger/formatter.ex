@@ -1,10 +1,10 @@
 defmodule LogflareLogger.Formatter do
   @moduledoc false
-  alias LogflareLogger.LogEvent
+  alias LogflareLogger.LogParams
 
   def format(level, message, ts, metadata) do
     try do
-      LogEvent.encode(ts, level, message, metadata)
+      LogParams.encode(ts, level, message, metadata)
     rescue
       e ->
         %{
