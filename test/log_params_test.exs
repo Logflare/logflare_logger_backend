@@ -43,10 +43,16 @@ defmodule LogflareLogger.LogParamsTest do
       x = %{"a" => 2, "b" => %{"a" => 6}}
       assert user_context === %{"keyword" => %{1 => [x, %{"two" => [x, x]}]}}
     end
+
+    test "observer_backend.sys_info()" do
+      user_context = build_user_context(observer_sys_info: :observer_backend.sys_info())
+
+      assert ["instance", 0, %{"mbcs" => _, "sbcs" => _}] = hd(user_context["observer_sys_info"]["alloc_info"]["binary_alloc"])
+    end
   end
 
   describe "LogParams" do
-    test "puts and overwrites level field in metadata" do
+    test "puts level field in metadata" do
       timestamp = Timex.now() |> Timex.to_erl()
       lp = LogParams.encode(timestamp, :info, "test message", level: "nope")
 
