@@ -5,14 +5,15 @@ defmodule LogflareLogger.LogParamsTest do
   require Logger
   use Placebo
 
-  describe "LogParams" do
-    test "converts tuples to lists" do
+  describe "LogParams conversion" do
+    test "tuples to lists" do
       x = %{tuples: {1, "tuple1", {2, "tuple2", {3, "tuple3"}}}}
       user_context = build_user_context(x)
+
       assert user_context === %{"tuples" => [1, "tuple1", [2, "tuple2", [3, "tuple3"]]]}
     end
 
-    test "converts structs to maps" do
+    test "structs to maps" do
       x = %Time{hour: 0, minute: 0, second: 0}
       user_context = build_user_context(%{struct: x})
 
@@ -27,7 +28,7 @@ defmodule LogflareLogger.LogParamsTest do
              }
     end
 
-    test "converts charlists to strings" do
+    test "charlists to strings" do
       x = 'just a simple charlist'
       user_context = build_user_context(%{charlist: %{x => [x, %{x => {x, x}}]}})
 
@@ -35,7 +36,7 @@ defmodule LogflareLogger.LogParamsTest do
       assert user_context === %{"charlist" => %{x => [x, %{x => [x, x]}]}}
     end
 
-    test "converts keywords to maps" do
+    test "keywords to maps" do
       x = [a: 2, b: [a: 6]]
       user_context = build_user_context(%{keyword: %{1 => [x, %{two: {x, x}}]}})
 
@@ -44,7 +45,16 @@ defmodule LogflareLogger.LogParamsTest do
     end
   end
 
-  def build_user_context(metadata) do
+  describe "LogParams" do
+    test "puts and overwrites level field in metadata" do
+      timestamp = Timex.now() |> Timex.to_erl()
+      lp = LogParams.encode(timestamp, :info, "test message", level: "nope")
+
+      assert lp["metadata"]["level"] == "info"
+    end
+  end
+
+  defp build_user_context(metadata) do
     timestamp = Timex.now() |> Timex.to_erl()
 
     LogParams.encode(timestamp, :info, "test message", metadata)

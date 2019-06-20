@@ -10,7 +10,6 @@ defmodule LogflareLogger.LogParams do
   """
   def encode(timestamp, level, message, metadata) do
     new(timestamp, level, message, metadata)
-    |> to_payload()
   end
 
   def new(timestamp, level, message, metadata) do
@@ -29,12 +28,17 @@ defmodule LogflareLogger.LogParams do
       log.metadata
       |> Map.split(@default_metadata_keys)
 
-    log
-    |> Map.drop([:metadata])
-    |> Map.put(:context, %{
-      system: system_context,
-      user: user_context
-    })
+    %{
+      "timestamp" => log.timestamp,
+      "message" => log.message,
+      "metadata" => %{
+        "level" => Atom.to_string(level),
+        "context" => %{
+          "system" => system_context,
+          "user" => user_context
+        }
+      }
+    }
   end
 
   @doc """
