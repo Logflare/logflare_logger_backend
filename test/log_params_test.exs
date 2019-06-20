@@ -58,6 +58,15 @@ defmodule LogflareLogger.LogParamsTest do
     end
   end
 
+  describe "LogParams doesn't convert" do
+    test "booleans" do
+      x = %{true: {true, [true]}}
+      user_context = build_user_context(x)
+
+      assert user_context === %{true: [true, [true]]}
+    end
+  end
+
   describe "LogParams" do
     test "puts level field in metadata" do
       timestamp = Timex.now() |> Timex.to_erl()

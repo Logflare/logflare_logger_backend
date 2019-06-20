@@ -118,6 +118,8 @@ defmodule LogflareLogger.LogParams do
   All atoms are converted to strings for Logflare server to be able
   to safely convert binary to terms using :erlang.binary_to_term(binary, [:safe])
   """
+  def traverse_convert(x) when is_boolean(x), do: x
+
   def traverse_convert(x) when is_atom(x), do: Atom.to_string(x)
 
   def traverse_convert(x) when is_pid(x) do
