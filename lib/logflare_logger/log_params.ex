@@ -12,7 +12,6 @@ defmodule LogflareLogger.LogParams do
     new(timestamp, level, message, metadata)
     |> to_payload()
     |> jsonify()
-    |> encode_metadata_charlists()
   end
 
   def new(timestamp, level, message, metadata) do
@@ -65,7 +64,6 @@ defmodule LogflareLogger.LogParams do
       |> encode_pid()
       |> encode_crash_reason()
       |> traverse_convert()
-      |> encode_metadata_charlists()
 
     %{log | metadata: meta}
   end
@@ -106,53 +104,22 @@ defmodule LogflareLogger.LogParams do
     Iteraptor.jsonify(log, values: true)
   end
 
-  def to_payload(log) do
-    metadata =
-      %{}
-      |> Map.merge(log.context[:user] || %{})
-      |> Map.put(:context, log.context[:system] || %{})
-      |> encode_metadata_charlists()
-
-    log
-    |> Map.put(:metadata, metadata)
-    |> Map.drop([:context])
-  end
-
-  def encode_metadata_charlists(metadata) do
-    case metadata do
-      xs when is_map(xs) ->
-        for {k, v} <- xs, into: Map.new() do
-          v =
-            cond do
-              is_list(v) and List.ascii_printable?(v) -> to_string(v)
-              is_map(v) or is_list(v) -> encode_metadata_charlists(v)
-              true -> v
-            end
-
-          {k, v}
-        end
-
-      xs when is_list(xs) ->
-        for x <- xs, do: encode_metadata_charlists(x)
-
-      xs ->
-        xs
-    end
-  end
-
-  def traverse_convert(data) when is_list(data) do
-    for x <- data, do: traverse_convert(x)
-  end
-
   def traverse_convert(%{__struct__: _} = v), do: v |> Map.from_struct() |> traverse_convert()
 
   def traverse_convert(data) when is_map(data) do
-    for {k,v} <- data, into: Map.new do
+    for {k, v} <- data, into: Map.new() do
       {k, traverse_convert(v)}
+    end
+  end
+
+  def traverse_convert(xs) when is_list(xs) do
+    if length(xs) > 0 and List.ascii_printable?(xs) do
+      to_string(xs)
+    else
+      for x <- xs, do: traverse_convert(x)
     end
   end
 
   def traverse_convert(x) when is_tuple(x), do: Tuple.to_list(x) |> traverse_convert()
   def traverse_convert(x), do: x
-
 end

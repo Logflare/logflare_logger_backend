@@ -15,7 +15,24 @@ defmodule LogflareLogger.LogParamsTest do
     test "converts structs to maps" do
       x = %Time{hour: 0, minute: 0, second: 0}
       user_context = build_user_context(%{struct: x})
-      assert user_context === %{"struct" => %{"calendar" => "Elixir.Calendar.ISO", "hour" => 0, "microsecond" => [0, 0], "minute" => 0, "second" => 0}}
+
+      assert user_context === %{
+               "struct" => %{
+                 "calendar" => "Elixir.Calendar.ISO",
+                 "hour" => 0,
+                 "microsecond" => [0, 0],
+                 "minute" => 0,
+                 "second" => 0
+               }
+             }
+    end
+
+    test "converts charlists to strings" do
+      x = 'just a simple charlist'
+      user_context = build_user_context(%{charlist: %{x => [x, %{x => {x, x}}]}})
+
+      x = to_string(x)
+      assert user_context === %{"charlist" => %{x => [x, %{x => [x, x]}]}}
     end
   end
 
