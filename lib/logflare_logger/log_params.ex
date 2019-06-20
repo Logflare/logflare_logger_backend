@@ -71,19 +71,6 @@ defmodule LogflareLogger.LogParams do
     %{log | metadata: meta}
   end
 
-  @doc """
-  Converts pid to string
-  """
-  def encode_pid(%{pid: pid} = meta) when is_pid(pid) do
-    pid =
-      pid
-      |> :erlang.pid_to_list()
-      |> to_string()
-
-    %{meta | pid: pid}
-  end
-
-  def encode_pid(meta), do: meta
 
   @doc """
   Adds formatted stacktrace to the metadata
@@ -132,6 +119,14 @@ defmodule LogflareLogger.LogParams do
   to safely convert binary to terms using :erlang.binary_to_term(binary, [:safe])
   """
   def traverse_convert(x) when is_atom(x), do: Atom.to_string(x)
+
+  def traverse_convert(x) when is_pid(x) do
+      x
+      |> :erlang.pid_to_list()
+      |> to_string()
+  end
+
+  def encode_pid(meta), do: meta
 
   def traverse_convert(x), do: x
 end

@@ -49,6 +49,13 @@ defmodule LogflareLogger.LogParamsTest do
 
       assert ["instance", 0, %{"mbcs" => _, "sbcs" => _}] = hd(user_context["observer_sys_info"]["alloc_info"]["binary_alloc"])
     end
+
+    test "pid to string" do
+      user_context = build_user_context(pid: self())
+
+      %{"pid" => pid} = user_context
+      assert is_binary(pid)
+    end
   end
 
   describe "LogParams" do
