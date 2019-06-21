@@ -13,24 +13,17 @@ defmodule LogflareLogger.LogParams do
   end
 
   def new(timestamp, level, message, metadata) do
-    log =
-      %{
-        timestamp: timestamp,
-        level: level,
-        message: message,
-        metadata: metadata
-      }
-      |> encode_message()
-      |> encode_timestamp()
-      |> encode_metadata()
+    message = encode_message(message)
+    timestamp = encode_timestamp(timestamp)
+    metadata = encode_metadata(metadata)
 
-    {system_context, user_context} =
-      log.metadata
-      |> Map.split(@default_metadata_keys)
+    {stacktrace, metadata} = Map.pop(metadata, "stacktrace")
 
-    %{
-      "timestamp" => log.timestamp,
-      "message" => log.message,
+    {system_context, user_context} = Map.split(metadata, @default_metadata_keys)
+
+    log_params = %{
+      "timestamp" => timestamp,
+      "message" => message,
       "metadata" => %{
         "level" => Atom.to_string(level),
         "context" => %{
@@ -39,38 +32,37 @@ defmodule LogflareLogger.LogParams do
         }
       }
     }
+
+    if stacktrace do
+      put_in(log_params, ~w[metadata stacktrace], stacktrace)
+    else
+      log_params
+    end
   end
 
   @doc """
   Encodes message, if is iodata converts to binary.
   """
-  def encode_message(%{message: m} = log) do
-    %{log | message: to_string(m)}
+  def encode_message(message) do
+    to_string(message)
   end
 
   @doc """
   Converts erlang datetime tuple into ISO:Extended binary.
   """
-  def encode_timestamp(%{timestamp: t} = log) when is_tuple(t) do
-    timestamp =
-      t
-      |> Timex.to_naive_datetime()
-      |> Timex.to_datetime(Timex.Timezone.local())
-      |> Timex.format!("{ISO:Extended}")
+  def encode_timestamp(t) when is_tuple(t) do
+    tz = Timex.Timezone.local()
 
-    %{log | timestamp: timestamp}
+    t
+    |> Timex.to_datetime(tz)
+    |> Timex.format!("{ISO:Extended}")
   end
 
-  def encode_metadata(%{metadata: meta} = log) do
-    meta =
-      meta
-      |> encode_pid()
-      |> encode_crash_reason()
-      |> traverse_convert()
-
-    %{log | metadata: meta}
+  def encode_metadata(meta) do
+    meta
+    |> encode_crash_reason()
+    |> traverse_convert()
   end
-
 
   @doc """
   Adds formatted stacktrace to the metadata
@@ -126,12 +118,10 @@ defmodule LogflareLogger.LogParams do
   def traverse_convert(x) when is_atom(x), do: Atom.to_string(x)
 
   def traverse_convert(x) when is_pid(x) do
-      x
-      |> :erlang.pid_to_list()
-      |> to_string()
+    x
+    |> :erlang.pid_to_list()
+    |> to_string()
   end
-
-  def encode_pid(meta), do: meta
 
   def traverse_convert(x), do: x
 end
