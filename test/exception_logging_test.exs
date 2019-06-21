@@ -4,6 +4,7 @@ defmodule LogflareLogger.ExceptionLoggingTest do
   alias LogflareLogger.{ApiClient, TestUtils, HttpBackend}
   alias Jason, as: JSON
   require Logger
+  use Placebo
 
   @path ApiClient.api_path()
 
@@ -12,8 +13,7 @@ defmodule LogflareLogger.ExceptionLoggingTest do
   @source "source2354551"
 
   setup do
-    bypass = Bypass.open()
-    Application.put_env(:logflare_logger_backend, :url, "http://127.0.0.1:#{bypass.port}")
+    Application.put_env(:logflare_logger_backend, :url, "http://127.0.0.1:4000")
     Application.put_env(:logflare_logger_backend, :api_key, @api_key)
     Application.put_env(:logflare_logger_backend, :source_id, @source)
     Application.put_env(:logflare_logger_backend, :level, :info)
@@ -22,44 +22,37 @@ defmodule LogflareLogger.ExceptionLoggingTest do
 
     Logger.add_backend(@logger_backend)
 
-    {:ok, bypass: bypass}
+    :ok
   end
 
-  test "logger backends sends a formatted log event after an exception", %{
-    bypass: bypass
-  } do
-    Bypass.expect(bypass, "POST", @path, fn conn ->
-      {:ok, body, conn} = Plug.Conn.read_body(conn)
-
-      assert {"x-api-key", @api_key} in conn.req_headers
-
-      body = TestUtils.decode_logger_body(body)
-
-      assert %{
-               "batch" => [
-                 %{
-                   "level" => level,
-                   "message" => message,
-                   "metadata" => %{
-                     "context" => %{
-                       "pid" => _
-                     },
-                     "stacktrace" => stacktrace
-                   },
-                   "timestamp" => _
-                 }
-                 | _
-               ],
-               "source" => @source
-             } = body
-
-      assert is_list(stacktrace)
-      Plug.Conn.resp(conn, 200, "")
-    end)
+  test "logger backends sends a formatted log event after an exception" do
+    allow ApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{status: 200}}
 
     spawn(fn -> 3.14 / 0 end)
     spawn(fn -> 3.14 / 0 end)
     spawn(fn -> 3.14 / 0 end)
+
     Process.sleep(1_000)
+
+    assert_called ApiClient.post_logs(
+                    any(),
+                    is(fn xs ->
+                      [
+                        %{
+                          "message" => _,
+                          "metadata" => %{
+                            "level" => "error",
+                            "context" => %{"system" => %{"pid" => _}},
+                            "stacktrace" => [_ | _]
+                          },
+                          "timestamp" => _
+                        }
+                        | _
+                      ] = xs
+
+                      true
+                    end),
+                    any()
+                  )
   end
 end
