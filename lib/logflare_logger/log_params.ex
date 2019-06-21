@@ -85,6 +85,9 @@ defmodule LogflareLogger.LogParams do
 
   def encode_crash_reason(meta), do: meta
 
+  def traverse_convert(%NaiveDateTime{} = v), do: to_string(v)
+  def traverse_convert(%DateTime{} = v), do: to_string(v)
+
   def traverse_convert(%{__struct__: _} = v) do
     v |> Map.from_struct() |> traverse_convert()
   end

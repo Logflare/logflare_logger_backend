@@ -56,6 +56,20 @@ defmodule LogflareLogger.LogParamsTest do
       %{"pid" => pid} = user_context
       assert is_binary(pid)
     end
+
+    test "NaiveDateTime and DateTime to String.Chars protocol" do
+      {:ok, ndt} = NaiveDateTime.new(1337, 4, 19, 0, 0, 0)
+
+      user_context =
+        build_user_context(
+          datetimes: %{
+            ndt: ndt,
+            dt: DateTime.from_naive!(ndt, "Etc/UTC")
+          }
+        )
+
+      assert user_context == %{"datetimes" => %{"dt" => "1337-04-19 00:00:00Z", "ndt" => "1337-04-19 00:00:00"}}
+    end
   end
 
   describe "LogParams doesn't convert" do
