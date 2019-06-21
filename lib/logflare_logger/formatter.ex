@@ -37,4 +37,8 @@ defmodule LogflareLogger.Formatter do
 
     format(level, msg, ts, meta)
   end
+
+  def format_event(_, _, _, _, nil) do
+    raise("LogflareLogger is not configured!")
+  end
 end
