@@ -82,20 +82,26 @@ defmodule LogflareLogger.HttpBackend do
 
     api_client = ApiClient.new(%{url: url, api_key: api_key})
 
-    config = struct!(
-      Config,
-      %{
-        api_client: api_client,
-        source_id: source_id,
-        level: level,
-        format: format,
-        metadata: metadata,
-        batch_size: config.batch_size,
-        batch_max_size: batch_max_size,
-        flush_interval: flush_interval
-      }
-    )
-    BatchCache.put_config(config)
+    config =
+      struct!(
+        Config,
+        %{
+          api_client: api_client,
+          source_id: source_id,
+          level: level,
+          format: format,
+          metadata: metadata,
+          batch_size: config.batch_size,
+          batch_max_size: batch_max_size,
+          flush_interval: flush_interval
+        }
+      )
+
+    spawn(fn ->
+      Process.sleep(5_000)
+      BatchCache.put_config(config)
+    end)
+
     config
   end
 
@@ -119,5 +125,4 @@ defmodule LogflareLogger.HttpBackend do
   @spec log_level_matches?(level, level | nil) :: boolean
   defp log_level_matches?(_lvl, nil), do: true
   defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
-
 end
