@@ -9,15 +9,13 @@ defmodule LogflareLogger.Formatter do
     rescue
       e ->
         %{
-          timestamp: NaiveDateTime.utc_now() |> NaiveDateTime.to_iso8601(),
-          level: "error",
-          message: "LogflareLogger formatter error: #{inspect(e, safe: true)}",
-          context: %{
-            formatter: %{
-              error: inspect(e, safe: true),
-              message: inspect(message, safe: true),
-              metadata: inspect(metadata, safe: true)
-            }
+          "timestamp" =>
+            NaiveDateTime.utc_now()
+            |> DateTime.from_naive!("Etc/UTC")
+            |> Timex.format!("{ISO:Extended}"),
+          "message" => "LogflareLogger formatter error: #{inspect(e, safe: true)}",
+          "metadata" => %{
+            "level" => "error"
           }
         }
     end
