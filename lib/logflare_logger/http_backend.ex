@@ -97,10 +97,11 @@ defmodule LogflareLogger.HttpBackend do
         }
       )
 
-    spawn(fn ->
-      Process.sleep(5_000)
-      BatchCache.put_config(config)
-    end)
+    if :ets.info(:logflare_logger_table) === :undefined do
+      :ets.new(:logflare_logger_table, [:named_table, :set, :public])
+    end
+
+    :ets.insert(:logflare_logger_table, {:config, config})
 
     config
   end

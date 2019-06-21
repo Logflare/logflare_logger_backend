@@ -21,7 +21,7 @@ defmodule LogflareLogger do
 
   def log(level, message, metadata) do
     datetime = Timex.now() |> Timex.to_erl()
-    config = BatchCache.get_config()
+    config = :ets.lookup(:logflare_logger_table, :config) |> Keyword.get(:config)
 
     metadata =
       metadata
