@@ -51,10 +51,8 @@ defmodule LogflareLogger.LogParams do
   Converts erlang datetime tuple into ISO:Extended binary.
   """
   def encode_timestamp(t) when is_tuple(t) do
-    tz = Timex.Timezone.local()
-
     t
-    |> Timex.to_datetime(tz)
+    |> Timex.to_datetime(Timex.Timezone.local())
     |> Timex.format!("{ISO:Extended}")
   end
 

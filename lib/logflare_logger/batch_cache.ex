@@ -7,8 +7,9 @@ defmodule LogflareLogger.BatchCache do
   @batch :batch
   @cache __MODULE__
   alias LogflareLogger.{ApiClient}
+
   # batch limit prevents runaway memory usage if API is unresponsive
-  @batch_limit 10_000
+  @batch_limit 1_000
 
   def put_initial do
     Cachex.put!(@cache, @batch, %{
@@ -20,16 +21,8 @@ defmodule LogflareLogger.BatchCache do
   def put(event, config) do
     new_batch =
       Cachex.get_and_update!(@cache, @batch, fn %{count: c, events: events} ->
-        events =
-          [event | events]
-          |> Enum.take(@batch_limit)
-
-        count =
-          if c + 1 > @batch_limit do
-            @batch_limit
-          else
-            c + 1
-          end
+        events = Enum.take([event | events], @batch_limit)
+        count = if c + 1 > @batch_limit, do: @batch_limit, else: c + 1
 
         %{count: count, events: events}
       end)
@@ -71,14 +64,7 @@ defmodule LogflareLogger.BatchCache do
   end
 
   def post_logs(events, %{api_client: api_client, source_id: source_id}) do
-    mod =
-      if Application.get_env(:logflare_env, :test_env)[:api_client] do
-        ApiClientMock
-      else
-        ApiClient
-      end
-
-    mod.post_logs(api_client, events, source_id)
+    ApiClient.post_logs(api_client, events, source_id)
   end
 
   def put_config(config) do
