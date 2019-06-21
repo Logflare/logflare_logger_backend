@@ -24,13 +24,10 @@ defmodule LogflareLogger.LogParams do
     log_params = %{
       "timestamp" => timestamp,
       "message" => message,
-      "metadata" => %{
-        "level" => Atom.to_string(level),
-        "context" => %{
-          "system" => system_context,
-          "user" => user_context
-        }
-      }
+      "metadata" =>
+        user_context
+        |> Map.put("level", Atom.to_string(level))
+        |> Map.put("context", system_context)
     }
 
     if stacktrace do
