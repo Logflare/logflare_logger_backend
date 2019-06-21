@@ -31,8 +31,9 @@ defmodule LogflareLogger.HttpBackend do
 
   def handle_event({level, _gl, {Logger, msg, datetime, metadata}}, %Config{} = config) do
     if log_level_matches?(level, config.level) do
-      log_event = format_event(level, msg, datetime, metadata, config)
-      BatchCache.put(log_event, config)
+      level
+      |> Formatter.format_event(msg, datetime, metadata, config)
+      |> BatchCache.put(config)
     end
 
     {:ok, config}
@@ -56,7 +57,7 @@ defmodule LogflareLogger.HttpBackend do
   def terminate(_reason, _state), do: :ok
 
   @spec configure_merge(keyword, Config.t()) :: Config.t()
-  defp configure_merge(options, %Config{} = config) when is_list(options) do
+  def configure_merge(options, %Config{} = config) when is_list(options) do
     # Configuration values are populated according to the following priorities:
     # 1. Dynamically confgiured options with Logger.configure(...)
     # 2. Application environment
@@ -81,19 +82,28 @@ defmodule LogflareLogger.HttpBackend do
 
     api_client = ApiClient.new(%{url: url, api_key: api_key})
 
-    struct!(
-      Config,
-      %{
-        api_client: api_client,
-        source_id: source_id,
-        level: level,
-        format: format,
-        metadata: metadata,
-        batch_size: config.batch_size,
-        batch_max_size: batch_max_size,
-        flush_interval: flush_interval
-      }
-    )
+    config =
+      struct!(
+        Config,
+        %{
+          api_client: api_client,
+          source_id: source_id,
+          level: level,
+          format: format,
+          metadata: metadata,
+          batch_size: config.batch_size,
+          batch_max_size: batch_max_size,
+          flush_interval: flush_interval
+        }
+      )
+
+    if :ets.info(:logflare_logger_table) === :undefined do
+      :ets.new(:logflare_logger_table, [:named_table, :set, :public])
+    end
+
+    :ets.insert(:logflare_logger_table, {:config, config})
+
+    config
   end
 
   # Batching and flushing
@@ -116,26 +126,4 @@ defmodule LogflareLogger.HttpBackend do
   @spec log_level_matches?(level, level | nil) :: boolean
   defp log_level_matches?(_lvl, nil), do: true
   defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
-
-  defp format_event(
-         level,
-         msg,
-         ts,
-         meta,
-         %Config{format: {Formatter, :format}, metadata: metakeys}
-       )
-       when is_list(metakeys) do
-    keys = Utils.default_metadata_keys() -- metakeys
-
-    meta =
-      meta
-      |> Enum.into(%{})
-      |> Map.drop(keys)
-
-    Formatter.format(level, msg, ts, meta)
-  end
-
-  defp format_event(level, msg, ts, meta, %Config{metadata: :all}) do
-    Formatter.format(level, msg, ts, Map.new(meta))
-  end
 end

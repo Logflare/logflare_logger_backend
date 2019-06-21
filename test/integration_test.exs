@@ -1,7 +1,6 @@
 defmodule LogflareLogger.IntegrationTest do
   @moduledoc false
   use ExUnit.Case
-  @moduletag integration: true
   alias LogflareLogger.{HttpBackend, Formatter, TestUtils}
   alias LogflareLogger.ApiClient
   alias Jason, as: JSON
@@ -47,11 +46,14 @@ defmodule LogflareLogger.IntegrationTest do
       assert %{
                "batch" => [
                  %{
-                   "level" => level,
                    "message" => "Incoming log from test " <> _,
                    "metadata" => %{
-                     "context" => %{},
-                     "test_context" => %{"some_metric" => 1337}
+                     "level" => level,
+                     "context" => %{
+                       "user" => %{
+                         "test_context" => %{"some_metric" => 1337}
+                       }
+                     }
                    },
                    "timestamp" => _
                  }
@@ -98,17 +100,21 @@ defmodule LogflareLogger.IntegrationTest do
       assert %{
                "batch" => [
                  %{
-                   "level" => "info",
                    "message" => @msg,
                    "metadata" => %{
+                     "level" => "info",
                      "context" => %{
-                       "pid" => pidbinary,
-                       "module" => _,
-                       "file" => _,
-                       "line" => _,
-                       "function" => _
-                     },
-                     "test_context" => _
+                       "system" => %{
+                         "pid" => pidbinary,
+                         "module" => _,
+                         "file" => _,
+                         "line" => _,
+                         "function" => _
+                       },
+                       "user" => %{
+                         "test_context" => _
+                       }
+                     }
                    },
                    "timestamp" => _
                  }

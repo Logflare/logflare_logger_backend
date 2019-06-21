@@ -24,19 +24,15 @@ defmodule LogflareLogger.ApiClientTest do
       body = TestUtils.decode_logger_body(body)
 
       assert %{
-               "batch" => [
-                 %{
-                   "level" => "info",
-                   "message" => "Logger message",
-                   "metadata" => %{
-                     "context" => %{
-                       "file" => "not_existing.ex"
-                     }
-                   }
-                 }
-               ],
-               "source" => @source_id
-             } = body
+        "batch" => [
+          %{
+            "context" => %{"system" => %{"file" => "not_existing.ex"}},
+            "level" => "info",
+            "message" => "Logger message"
+          }
+        ],
+        "source" => "source2354551"
+      } = body
 
       Plug.Conn.resp(conn, 200, "ok")
     end)

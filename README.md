@@ -42,6 +42,27 @@ LogflareLogger.get_context()
 LogflareLogger.delete_context(:user)
 LogflareLogger.delete_context()
 ```
+
+## Current limitations
+
+Logflare log event BigQuery table schema is auto-generated per source. If you send a log with `Logger.info("first", user: %{id: 1})`, Logflare will generate a metadata field of type integer. If in the future, you'll send a log event to the same source using `Logger.info("first", user: %{id: "d9c2feff-d38a-4671-8de4-a1e7f7dd7e3c"1})`, the log with a binary id will be rejected.
+
+LogflareLogger log payloads sent to Logflare API are encoded using [BERT](http://bert-rpc.org). 
+
+At this moment LogflareLogger doesn't support full one-to-one logging of Elixir types and applies the following conversions:
+
+* atoms converted to strings 
+* charlists are converted to strings
+* tuples converted to arrays
+* keyword lists converted to maps
+* structs converted to maps
+* NaiveDateTime and DateTime are converted using the `String.Chars` protocol 
+* pids are converted to strings
+
+LogflareLogger doesn't support: 
+
+* non-binary messages, e.g. `Logger.info(%{user_count: 1337})`
+
 ## Exceptions
 
 LogflareLogger automatically logs all exceptions and formats stacktraces.
@@ -60,7 +81,7 @@ by adding `logflare_logger_backend` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:logflare_logger_backend, "~> 0.1.0"}
+    {:logflare_logger_backend, "~> 0.5.0"}
   ]
 end
 ```

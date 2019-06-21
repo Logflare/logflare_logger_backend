@@ -7,8 +7,9 @@ defmodule LogflareLogger.BatchCache do
   @batch :batch
   @cache __MODULE__
   alias LogflareLogger.{ApiClient}
+
   # batch limit prevents runaway memory usage if API is unresponsive
-  @batch_limit 10_000
+  @batch_limit 1_000
 
   def put_initial do
     Cachex.put!(@cache, @batch, %{
@@ -21,13 +22,7 @@ defmodule LogflareLogger.BatchCache do
     new_batch =
       Cachex.get_and_update!(@cache, @batch, fn %{count: c, events: events} ->
         events = Enum.take([event | events], @batch_limit)
-
-        count =
-          if c + 1 > @batch_limit do
-            @batch_limit
-          else
-            c + 1
-          end
+        count = if c + 1 > @batch_limit, do: @batch_limit, else: c + 1
 
         %{count: count, events: events}
       end)
@@ -42,23 +37,21 @@ defmodule LogflareLogger.BatchCache do
   def flush(config) do
     batch = get!()
 
-    with {:count, true} <- {:count, batch.count > 0},
-         {:api, {:ok, %Tesla.Env{status: 200}}} <- {:api, post_logs(batch.events, config)} do
-      get_and_update!(fn %{count: c, events: events} ->
-        events = events -- batch.events
-        %{count: c - batch.count, events: events}
-      end)
-    else
-      {:api, {:error, reason}} ->
-        IO.warn("Logflare API error: #{inspect(reason)}")
-        :noop
+    if batch.count > 0 do
+      batch.events
+      |> Enum.reverse()
+      |> post_logs(config)
+      |> case do
+        {:ok, %Tesla.Env{status: _}} ->
+          get_and_update!(fn %{count: c, events: events} ->
+            events = events -- batch.events
+            %{count: c - batch.count, events: events}
+          end)
 
-      {:api, {_, tesla_env}} ->
-        IO.warn("Logflare API response status is #{tesla_env.status}. Error: #{inspect(tesla_env)}")
-        :noop
-
-      {:count, _} ->
-        :noop
+        {:error, reason} ->
+          IO.warn("Logflare API error: #{inspect(reason)}")
+          :noop
+      end
     end
   end
 
@@ -71,13 +64,14 @@ defmodule LogflareLogger.BatchCache do
   end
 
   def post_logs(events, %{api_client: api_client, source_id: source_id}) do
-    mod =
-      if Application.get_env(:logflare_env, :test_env)[:api_client] do
-        ApiClientMock
-      else
-        ApiClient
-      end
+    ApiClient.post_logs(api_client, events, source_id)
+  end
 
-    mod.post_logs(api_client, events, source_id)
+  def put_config(config) do
+    Cachex.put!(@cache, :config, config)
+  end
+
+  def get_config() do
+    Cachex.get!(@cache, :config)
   end
 end

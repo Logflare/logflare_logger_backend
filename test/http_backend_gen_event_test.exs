@@ -1,7 +1,7 @@
 defmodule LogflareLogger.HttpBackendTest do
   use ExUnit.Case
   alias LogflareLogger.{HttpBackend, Formatter, BatchCache, ApiClient}
-  import Mox
+  use Placebo
 
   @default_config [
     format: {Formatter, :format},
@@ -15,9 +15,6 @@ defmodule LogflareLogger.HttpBackendTest do
   ]
 
   setup_all do
-    Application.put_env(:logflare_logger, :test_env, api_client: ApiClientMock)
-    Mox.defmock(ApiClientMock, for: ApiClient)
-
     on_exit(fn ->
       BatchCache.put_initial()
       Logger.flush()
@@ -49,14 +46,8 @@ defmodule LogflareLogger.HttpBackendTest do
     end
 
     test "flushes after batch reaches max_batch_size" do
-      expect(
-        ApiClientMock,
-        :post_logs,
-        fn client, batch, source ->
-          assert length(batch) == 10
-          {:ok, %{}}
-        end
-      )
+      allow ApiClient.new(any), return: %Tesla.Client{}
+      allow ApiClient.post_logs(any, any, any), return: {:ok, %Tesla.Env{}}
 
       {:ok, state} = init_with_default(flush_interval: 60_000)
       msg = {:info, nil, {Logger, "log message", ts(1), []}}
@@ -70,6 +61,14 @@ defmodule LogflareLogger.HttpBackendTest do
           state
         end
       )
+
+      assert_called ApiClient.post_logs(
+                      any(),
+                      is(fn batch ->
+                        assert length(batch) == 10
+                      end),
+                      any()
+                    )
     end
   end
 
