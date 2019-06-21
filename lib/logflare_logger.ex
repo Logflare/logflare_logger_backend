@@ -1,7 +1,7 @@
 defmodule LogflareLogger do
   @moduledoc """
   """
-  alias LogflareLogger.{HttpBackend, BatchCache}
+  alias LogflareLogger.{HttpBackend, BatchCache, Formatter}
 
   def debug(message, metadata \\ []) do
     log(:debug, message, metadata)
@@ -20,11 +20,17 @@ defmodule LogflareLogger do
   end
 
   def log(level, message, metadata) do
-    datetime = Timex.now() |> Timex.to_datetime(Timex.Timezone.local()) |> Timex.to_erl()
+    datetime = Timex.now() |> Timex.to_erl()
     config = BatchCache.get_config()
-    metadata = Logger.metadata() ++ metadata
 
-    log_event = HttpBackend.format_event(level, message, datetime, metadata, config)
+    metadata =
+      metadata
+      |> Enum.into(Map.new())
+      |> Map.merge(Logger.metadata() |> Enum.into(Map.new()))
+      |> Map.merge(%{pid: self()})
+      |> Enum.into(Keyword.new())
+
+    log_event = Formatter.format_event(level, message, datetime, metadata, config)
     BatchCache.put(log_event, config)
   end
 

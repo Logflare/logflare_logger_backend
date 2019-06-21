@@ -31,8 +31,9 @@ defmodule LogflareLogger.HttpBackend do
 
   def handle_event({level, _gl, {Logger, msg, datetime, metadata}}, %Config{} = config) do
     if log_level_matches?(level, config.level) do
-      log_event = format_event(level, msg, datetime, metadata, config)
-      BatchCache.put(log_event, config)
+      level
+      |> Formatter.format_event(msg, datetime, metadata, config)
+      |> BatchCache.put(config)
     end
 
     {:ok, config}
@@ -119,25 +120,4 @@ defmodule LogflareLogger.HttpBackend do
   defp log_level_matches?(_lvl, nil), do: true
   defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
 
-  def format_event(
-         level,
-         msg,
-         ts,
-         meta,
-         %Config{format: {Formatter, :format}, metadata: metakeys}
-       )
-       when is_list(metakeys) do
-    keys = Utils.default_metadata_keys() -- metakeys
-
-    meta =
-      meta
-      |> Enum.into(%{})
-      |> Map.drop(keys)
-
-    Formatter.format(level, msg, ts, meta)
-  end
-
-  def format_event(level, msg, ts, meta, %Config{metadata: :all}) do
-    Formatter.format(level, msg, ts, Map.new(meta))
-  end
 end
