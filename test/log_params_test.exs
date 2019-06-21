@@ -47,13 +47,14 @@ defmodule LogflareLogger.LogParamsTest do
     test "observer_backend.sys_info()" do
       user_context = build_user_context(observer_sys_info: :observer_backend.sys_info())
 
-      assert ["instance", 0, %{"mbcs" => _, "sbcs" => _}] = hd(user_context["observer_sys_info"]["alloc_info"]["binary_alloc"])
+      assert ["instance", 0, %{"mbcs" => _, "sbcs" => _}] =
+               hd(user_context["observer_sys_info"]["alloc_info"]["binary_alloc"])
     end
 
     test "pid to string" do
-      user_context = build_user_context(pid: self())
+      user_context = build_user_context(user_pid: self())
 
-      %{"pid" => pid} = user_context
+      %{"user_pid" => pid} = user_context
       assert is_binary(pid)
     end
 
@@ -68,7 +69,9 @@ defmodule LogflareLogger.LogParamsTest do
           }
         )
 
-      assert user_context == %{"datetimes" => %{"dt" => "1337-04-19 00:00:00Z", "ndt" => "1337-04-19 00:00:00"}}
+      assert user_context == %{
+               "datetimes" => %{"dt" => "1337-04-19 00:00:00Z", "ndt" => "1337-04-19 00:00:00"}
+             }
     end
   end
 
