@@ -2,6 +2,7 @@ defmodule LogflareLogger.HttpBackend do
   @moduledoc """
   Implements :gen_event behaviour, handles incoming Logger messages
   """
+  @default_api_url "https://api.logflare.app"
   @app :logflare_logger_backend
   alias LogflareLogger.Utils
   @behaviour :gen_event
@@ -67,7 +68,7 @@ defmodule LogflareLogger.HttpBackend do
       |> Application.get_all_env()
       |> Keyword.merge(options)
 
-    url = Keyword.get(options, :url)
+    url = Keyword.get(options, :url) || @default_api_url
     api_key = Keyword.get(options, :api_key)
     source_id = Keyword.get(options, :source_id)
     level = Keyword.get(options, :level, config.level)
