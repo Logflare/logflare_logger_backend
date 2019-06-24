@@ -70,12 +70,4 @@ defmodule LogflareLogger.BatchCache do
   def post_logs(events, %{api_client: api_client, source_id: source_id}) do
     ApiClient.post_logs(api_client, events, source_id)
   end
-
-  def put_config(config) do
-    Cachex.put!(@cache, :config, config)
-  end
-
-  def get_config() do
-    Cachex.get!(@cache, :config)
-  end
 end
