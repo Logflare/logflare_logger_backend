@@ -42,7 +42,11 @@ defmodule LogflareLogger.BatchCache do
       |> Enum.reverse()
       |> post_logs(config)
       |> case do
-        {:ok, %Tesla.Env{status: _}} ->
+        {:ok, %Tesla.Env{status: status}} ->
+          unless status == 200 do
+            IO.warn("Logflare API warning: HTTP response status is #{status}")
+          end
+
           get_and_update!(fn %{count: c, events: events} ->
             events = events -- batch.events
             %{count: c - batch.count, events: events}
