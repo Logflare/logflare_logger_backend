@@ -24,7 +24,7 @@ defmodule LogflareLogger.IntegrationTest do
     Logger.add_backend(@logger_backend)
 
     on_exit(fn ->
-      LogflareLogger.delete_context(:test_context)
+      LogflareLogger.context(test_context: nil)
       Logger.remove_backend(@logger_backend, flush: true)
     end)
 
@@ -34,7 +34,7 @@ defmodule LogflareLogger.IntegrationTest do
   test "logger backend sends a POST request", %{bypass: bypass} do
     :ok = Logger.configure_backend(@logger_backend, metadata: [])
     log_msg = "Incoming log from test"
-    LogflareLogger.merge_context(test_context: %{some_metric: 1337})
+    LogflareLogger.context(test_context: %{some_metric: 1337})
 
     Bypass.expect(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
@@ -49,11 +49,8 @@ defmodule LogflareLogger.IntegrationTest do
                    "message" => "Incoming log from test " <> _,
                    "metadata" => %{
                      "level" => level,
-                     "context" => %{
-                       "user" => %{
-                         "test_context" => %{"some_metric" => 1337}
-                       }
-                     }
+                     "context" => %{"pid" => _},
+                     "test_context" => %{"some_metric" => 1337}
                    },
                    "timestamp" => _
                  }
@@ -90,7 +87,7 @@ defmodule LogflareLogger.IntegrationTest do
   @msg "Incoming log from test with all metadata"
   test "correctly handles metadata keys", %{bypass: bypass} do
     :ok = Logger.configure_backend(@logger_backend, metadata: :all)
-    LogflareLogger.merge_context(test_context: %{some_metric: 7331})
+    LogflareLogger.context(test_context: %{some_metric: 7331})
 
     Bypass.expect_once(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
@@ -104,17 +101,13 @@ defmodule LogflareLogger.IntegrationTest do
                    "metadata" => %{
                      "level" => "info",
                      "context" => %{
-                       "system" => %{
-                         "pid" => pidbinary,
-                         "module" => _,
-                         "file" => _,
-                         "line" => _,
-                         "function" => _
-                       },
-                       "user" => %{
-                         "test_context" => _
-                       }
-                     }
+                       "pid" => pidbinary,
+                       "module" => _,
+                       "file" => _,
+                       "line" => _,
+                       "function" => _
+                     },
+                     "test_context" => _
                    },
                    "timestamp" => _
                  }

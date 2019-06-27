@@ -98,7 +98,6 @@ defmodule LogflareLogger.LogParamsTest do
 
     LogParams.encode(timestamp, :info, "test message", metadata)
     |> Map.get("metadata")
-    |> Map.get("context")
-    |> Map.get("user")
+    |> Map.drop(["context", "level"])
   end
 end

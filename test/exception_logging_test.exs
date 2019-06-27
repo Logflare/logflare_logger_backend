@@ -42,7 +42,7 @@ defmodule LogflareLogger.ExceptionLoggingTest do
                           "message" => _,
                           "metadata" => %{
                             "level" => "error",
-                            "context" => %{"system" => %{"pid" => _}},
+                            "context" => %{"pid" => _},
                             "stacktrace" => [_ | _]
                           },
                           "timestamp" => _
