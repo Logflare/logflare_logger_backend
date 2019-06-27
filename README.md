@@ -29,18 +29,20 @@ After configuring LogflareLogger in `config.exs`, use `Logger.info, Logger.error
 
 ## Usage with context
 
+`LogflareLogger.context` function signatures follows the one of `Logger.metadata` with slight modifications to parameters and return values.
+
 ```elixir
 # Merges map or keyword with existing context, will overwrite values.
-LogflareLogger.merge_context(%{user: %{id: 3735928559}})
-LogflareLogger.merge_context(user: %{id: 3735928559})
+LogflareLogger.context(%{user: %{id: 3735928559}})
+LogflareLogger.context(user: %{id: 3735928559})
 
 # Get all context entries or a value for a specific key
-LogflareLogger.get_context(:user)
-LogflareLogger.get_context()
+LogflareLogger.context(:user)
+LogflareLogger.context()
 
 # Deletes all context entries or specific context key/value
-LogflareLogger.delete_context(:user)
-LogflareLogger.delete_context()
+LogflareLogger.context(user: nil)
+LogflareLogger.reset_context()
 ```
 
 ## Current limitations
