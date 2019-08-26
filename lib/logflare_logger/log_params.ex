@@ -110,6 +110,8 @@ defmodule LogflareLogger.LogParams do
   """
   def traverse_convert(x) when is_boolean(x), do: x
 
+  def traverse_convert(nil), do: nil
+
   def traverse_convert(x) when is_atom(x), do: Atom.to_string(x)
 
   def traverse_convert(x) when is_pid(x) do

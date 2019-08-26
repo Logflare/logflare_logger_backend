@@ -18,7 +18,12 @@ defmodule LogflareLoggerTest do
     Application.put_env(:logflare_logger_backend, :level, :info)
     Application.put_env(:logflare_logger_backend, :flush_interval, 100)
     Application.put_env(:logflare_logger_backend, :max_batch_size, 2)
-    {:ok, _pid} = Logger.add_backend(@logger_backend)
+
+    case Logger.add_backend(@logger_backend) do
+      {:ok, _pid} -> :noop
+      {:error, :already_present} -> :noop
+      {:error, err} -> throw(err)
+    end
 
     on_exit(&LogflareLogger.reset_context/0)
     :ok
