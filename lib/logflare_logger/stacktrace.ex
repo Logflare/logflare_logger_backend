@@ -4,7 +4,7 @@ defmodule LogflareLogger.Stacktrace do
   """
 
   def format(stacktrace) when is_list(stacktrace) do
-    for i <- stacktrace, do: format_entry(i)
+    for i <- stacktrace, do: i |> format_entry()
   end
 
   defp format_entry({mod, fun, arity_or_args, location} = entry) do
@@ -32,8 +32,20 @@ defmodule LogflareLogger.Stacktrace do
     nil
   end
 
-  defp format_field(:file, location), do: Keyword.get(location, :file) |> to_string
-  defp format_field(:line, location), do: Keyword.get(location, :line)
+  defp format_field(:file, location) do
+    case Keyword.get(location, :file) do
+      nil -> nil
+      x -> to_string(x)
+    end
+  end
+
+  defp format_field(:line, location) do
+    case Keyword.get(location, :line) do
+      "nil" -> nil
+      nil -> nil
+      int when is_integer(int) -> int
+    end
+  end
 
   defp format_field(:function, fun, args) do
     arity = format_field(:arity_or_args, args)
@@ -44,7 +56,7 @@ defmodule LogflareLogger.Stacktrace do
     arity
   end
 
-  defp format_field(:arity_or_args, args) do
-    args
+  defp format_field(:arity_or_args, args) when is_list(args) do
+    inspect(args)
   end
 end

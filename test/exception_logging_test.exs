@@ -31,28 +31,31 @@ defmodule LogflareLogger.ExceptionLoggingTest do
     spawn(fn -> 3.14 / 0 end)
     spawn(fn -> 3.14 / 0 end)
     spawn(fn -> 3.14 / 0 end)
+    spawn(fn -> Enum.find(nil, & &1) end)
 
     Process.sleep(1_000)
 
-    assert_called ApiClient.post_logs(
-                    any(),
-                    is(fn xs ->
-                      [
-                        %{
-                          "message" => _,
-                          "metadata" => %{
-                            "level" => "error",
-                            "context" => %{"pid" => _},
-                            "stacktrace" => [_ | _]
-                          },
-                          "timestamp" => _
-                        }
-                        | _
-                      ] = xs
+    assert_called(
+      ApiClient.post_logs(
+        any(),
+        is(fn xs ->
+          [
+            %{
+              "message" => _,
+              "metadata" => %{
+                "level" => "error",
+                "context" => %{"pid" => _},
+                "stacktrace" => [_ | _]
+              },
+              "timestamp" => _
+            }
+            | _
+          ] = xs
 
-                      true
-                    end),
-                    any()
-                  )
+          true
+        end),
+        any()
+      )
+    )
   end
 end
