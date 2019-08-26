@@ -1,7 +1,7 @@
 defmodule LogflareLogger.PayloadCasesTest do
   @moduledoc false
   use ExUnit.Case
-  alias LogflareLogger.ApiClient
+  alias LogflareLogger.{ApiClient, HttpBackend}
   alias Jason, as: JSON
   require Logger
   use Placebo
@@ -29,5 +29,20 @@ defmodule LogflareLogger.PayloadCasesTest do
     end)
 
     :ok
+  end
+
+  describe "payload edge cases" do
+    test "simple tuple" do
+      allow(ApiClient.new(any()), return: %Tesla.Client{})
+      allow(ApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{status: 200}})
+      members = ["chase", "bob", "drew"]
+
+      Logger.info("Test list!",
+        test_list: List.to_tuple(members)
+      )
+
+      Process.sleep(100)
+      assert_called(ApiClient.post_logs(any, any, any))
+    end
   end
 end

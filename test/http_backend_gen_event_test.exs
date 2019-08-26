@@ -10,7 +10,7 @@ defmodule LogflareLogger.HttpBackendTest do
     url: "http://localhost:4000/logs/elixir/logger",
     source_id: "source",
     api_key: "api_key",
-    max_batch_size: 10,
+    batch_max_size: 10,
     metadata: []
   ]
 
@@ -46,14 +46,14 @@ defmodule LogflareLogger.HttpBackendTest do
     end
 
     test "flushes after batch reaches max_batch_size" do
-      allow ApiClient.new(any), return: %Tesla.Client{}
-      allow ApiClient.post_logs(any, any, any), return: {:ok, %Tesla.Env{}}
+      allow(ApiClient.new(any), return: %Tesla.Client{})
+      allow(ApiClient.post_logs(any, any, any), return: {:ok, %Tesla.Env{}})
 
       {:ok, state} = init_with_default(flush_interval: 60_000)
       msg = {:info, nil, {Logger, "log message", ts(1), []}}
 
       Enum.reduce(
-        2..10,
+        1..10,
         state,
         fn i, acc ->
           msg = {:info, nil, {Logger, "log message", ts(i), []}}
@@ -62,13 +62,15 @@ defmodule LogflareLogger.HttpBackendTest do
         end
       )
 
-      assert_called ApiClient.post_logs(
-                      any(),
-                      is(fn batch ->
-                        assert length(batch) == 10
-                      end),
-                      any()
-                    )
+      assert_called(
+        ApiClient.post_logs(
+          any(),
+          is(fn batch ->
+            assert length(batch) == 10
+          end),
+          any()
+        )
+      )
     end
   end
 

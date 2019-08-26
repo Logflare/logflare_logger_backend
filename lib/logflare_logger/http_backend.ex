@@ -74,7 +74,7 @@ defmodule LogflareLogger.HttpBackend do
     level = Keyword.get(options, :level, config.level)
     format = Keyword.get(options, :format, config.format)
     metadata = Keyword.get(options, :metadata, config.metadata)
-    batch_max_size = Keyword.get(options, :max_batch_size, config.batch_max_size)
+    batch_max_size = Keyword.get(options, :batch_max_size, config.batch_max_size)
     flush_interval = Keyword.get(options, :flush_interval, config.flush_interval)
 
     CLI.throw_on_missing_url!(url)

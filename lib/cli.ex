@@ -1,5 +1,4 @@
 defmodule LogflareLogger.CLI do
-
   def throw_on_missing_url!(url) do
     unless url do
       throw("Logflare API url #{not_configured()}")
@@ -21,5 +20,4 @@ defmodule LogflareLogger.CLI do
   def not_configured() do
     "for LogflareLogger backend is NOT configured"
   end
-
 end
