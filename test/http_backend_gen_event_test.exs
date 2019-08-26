@@ -34,23 +34,22 @@ defmodule LogflareLogger.HttpBackendTest do
   describe "HttpBackend.handle_event/2" do
     test "flushes after :flush msg" do
       {:ok, state} = init_with_default()
-      {:ok, state} = HttpBackend.handle_event(:flush, state)
+      {:ok, _state} = HttpBackend.handle_event(:flush, state)
       assert_receive :flush, @default_config[:flush_interval] + 10
     end
 
     test "new log message gets flushed within the interval" do
       {:ok, state} = init_with_default()
       msg = {:info, nil, {Logger, "log message", ts(0), []}}
-      {:ok, state} = HttpBackend.handle_event(msg, state)
+      {:ok, _state} = HttpBackend.handle_event(msg, state)
       assert_receive :flush, @default_config[:flush_interval] + 10
     end
 
     test "flushes after batch reaches max_batch_size" do
-      allow(ApiClient.new(any), return: %Tesla.Client{})
-      allow(ApiClient.post_logs(any, any, any), return: {:ok, %Tesla.Env{}})
+      allow(ApiClient.new(any()), return: %Tesla.Client{})
+      allow(ApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{}})
 
       {:ok, state} = init_with_default(flush_interval: 60_000)
-      msg = {:info, nil, {Logger, "log message", ts(1), []}}
 
       Enum.reduce(
         1..10,
@@ -77,7 +76,7 @@ defmodule LogflareLogger.HttpBackendTest do
   describe "HttpBackend.handle_info/2" do
     test "flushes after :flush msg" do
       {:ok, state} = init_with_default()
-      {:ok, state} = HttpBackend.handle_info(:flush, state)
+      {:ok, _state} = HttpBackend.handle_info(:flush, state)
       assert_receive :flush, @default_config[:flush_interval] + 10
     end
   end

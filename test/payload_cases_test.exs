@@ -2,13 +2,8 @@ defmodule LogflareLogger.PayloadCasesTest do
   @moduledoc false
   use ExUnit.Case
   alias LogflareLogger.{ApiClient, HttpBackend}
-  alias Jason, as: JSON
   require Logger
   use Placebo
-
-  import Tesla.Mock
-
-  @path ApiClient.api_path()
 
   @logger_backend HttpBackend
   @api_key "test_api_key"
@@ -42,7 +37,7 @@ defmodule LogflareLogger.PayloadCasesTest do
       )
 
       Process.sleep(100)
-      assert_called(ApiClient.post_logs(any, any, any))
+      assert_called(ApiClient.post_logs(any(), any(), any()))
     end
   end
 end

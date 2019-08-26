@@ -1,12 +1,9 @@
 defmodule LogflareLogger.ExceptionLoggingTest do
   @moduledoc false
   use ExUnit.Case
-  alias LogflareLogger.{ApiClient, TestUtils, HttpBackend}
-  alias Jason, as: JSON
+  alias LogflareLogger.{ApiClient, HttpBackend}
   require Logger
   use Placebo
-
-  @path ApiClient.api_path()
 
   @logger_backend HttpBackend
   @api_key "l3kh47jsakf2370dasg"
@@ -26,7 +23,7 @@ defmodule LogflareLogger.ExceptionLoggingTest do
   end
 
   test "logger backends sends a formatted log event after an exception" do
-    allow ApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{status: 200}}
+    allow(ApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{status: 200}})
 
     spawn(fn -> 3.14 / 0 end)
     spawn(fn -> 3.14 / 0 end)

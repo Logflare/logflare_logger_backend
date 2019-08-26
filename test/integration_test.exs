@@ -1,9 +1,8 @@
 defmodule LogflareLogger.IntegrationTest do
   @moduledoc false
   use ExUnit.Case
-  alias LogflareLogger.{HttpBackend, Formatter, TestUtils}
+  alias LogflareLogger.{HttpBackend, TestUtils}
   alias LogflareLogger.ApiClient
-  alias Jason, as: JSON
   require Logger
 
   @path ApiClient.api_path()
@@ -123,7 +122,7 @@ defmodule LogflareLogger.IntegrationTest do
 
     log_msg = @msg
 
-    for n <- 1..45, do: Logger.info(log_msg)
+    for _n <- 1..45, do: Logger.info(log_msg)
 
     Process.sleep(1_000)
   end

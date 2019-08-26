@@ -2,7 +2,7 @@ defmodule LogflareLogger.BatchCacheTest do
   @moduledoc false
   use ExUnit.Case
   alias LogflareLogger.{BatchCache, ApiClient}
-  @test_batch_key :test_batch
+
   @backend_config %{
     api_client: ApiClient.new(%{url: "http://localhost:4000", api_key: ""}),
     source_id: "source-id",

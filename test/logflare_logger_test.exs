@@ -37,12 +37,12 @@ defmodule LogflareLoggerTest do
 
       assert_called(
         ApiClient.post_logs(
-          any,
+          any(),
           is(fn [logger, logflare_logger] ->
             assert Map.drop(logger, ~w[timestamp]) ==
                      Map.drop(logflare_logger, ~w[timestamp])
           end),
-          any
+          any()
         )
       )
     end
