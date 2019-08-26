@@ -8,7 +8,17 @@ defmodule LogflareLogger.MixProject do
       elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      description: description(),
+      package: package(),
+      name: "Logflare Logger Backend",
+      source_url: "https://github.com/Logflare/logflare_logger_backend",
+      homepage_url: "https://logflare.app",
+      docs: [
+        main: "readme",
+        # logo: "path/to/logo.png",
+        extras: ["README.md"]
+      ]
     ]
   end
 
@@ -36,7 +46,19 @@ defmodule LogflareLogger.MixProject do
       {:bertex, "~> 1.3"},
       {:iteraptor, ">= 0.0.0"},
       {:hackney, "~> 1.10"},
-      {:placebo, "~> 1.2", only: :test}
+      {:placebo, "~> 1.2", only: :test},
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false}
+    ]
+  end
+
+  defp description() do
+    "Easily ship structured logs and log based metrics to Logflare with the Logflare Logger backend."
+  end
+
+  defp package() do
+    [
+      links: %{"GitHub" => "https://github.com/Logflare/logflare_logger_backend"},
+      licenses: ["MIT"]
     ]
   end
 end
