@@ -4,7 +4,6 @@ defmodule LogflareLogger.HttpBackend do
   """
   @default_api_url "https://api.logflare.app"
   @app :logflare_logger_backend
-  alias LogflareLogger.Utils
   @behaviour :gen_event
   require Logger
   alias LogflareLogger.{ApiClient, Formatter, BatchCache, CLI}

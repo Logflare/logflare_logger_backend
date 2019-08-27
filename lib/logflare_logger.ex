@@ -1,7 +1,7 @@
 defmodule LogflareLogger do
   @moduledoc """
   """
-  alias LogflareLogger.{HttpBackend, BatchCache, Formatter}
+  alias LogflareLogger.{BatchCache, Formatter}
 
   def debug(message, metadata \\ []) do
     log(:debug, message, metadata)

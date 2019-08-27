@@ -7,7 +7,7 @@ defmodule LogflareLogger.Stacktrace do
     for i <- stacktrace, do: i |> format_entry()
   end
 
-  defp format_entry({mod, fun, arity_or_args, location} = entry) do
+  defp format_entry({mod, fun, arity_or_args, location}) do
     %{
       module: format_field(:module, mod),
       file: format_field(:file, location),
@@ -48,6 +48,12 @@ defmodule LogflareLogger.Stacktrace do
     end
   end
 
+  defp format_field(:arity, arity) when is_integer(arity), do: arity
+  defp format_field(:arity, _), do: nil
+
+  defp format_field(:args, args) when is_list(args), do: inspect(args)
+  defp format_field(:args, _), do: nil
+
   defp format_field(:function, fun, args) do
     arity = format_field(:arity, args)
 
@@ -57,10 +63,4 @@ defmodule LogflareLogger.Stacktrace do
       "#{fun}"
     end
   end
-
-  defp format_field(:arity, arity) when is_integer(arity), do: arity
-  defp format_field(:arity, _), do: nil
-
-  defp format_field(:args, args) when is_list(args), do: inspect(args)
-  defp format_field(:args, _), do: nil
 end
