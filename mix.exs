@@ -39,7 +39,7 @@ defmodule LogflareLogger.MixProject do
       {:mix_test_watch, ">= 0.9.0", only: :dev, runtime: false},
       {:jason, "~> 1.0"},
       {:bypass, "~> 1.0", only: :test},
-      {:tesla, "~> 1.2.1"},
+      {:tesla, "~> 1.3"},
       {:cachex, "~> 3.0"},
       {:timex, "~> 3.0"},
       {:typed_struct, ">= 0.0.0"},
