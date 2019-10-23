@@ -91,6 +91,13 @@ defmodule LogflareLogger.LogParamsTest do
 
       assert lp["metadata"]["level"] == "info"
     end
+
+    test "vm and node data is present in system context" do
+      timestamp = Timex.now() |> Timex.to_erl()
+      lp = LogParams.encode(timestamp, :info, "test message", level: "nope")
+
+      assert lp["metadata"]["context"]["vm"]["node"] == "#{Node.self()}"
+    end
   end
 
   defp build_user_context(metadata) do

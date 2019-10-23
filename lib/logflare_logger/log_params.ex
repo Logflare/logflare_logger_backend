@@ -21,6 +21,10 @@ defmodule LogflareLogger.LogParams do
 
     {system_context, user_context} = Map.split(metadata, @default_metadata_keys)
 
+    system_context =
+      system_context
+      |> enrich(:vm)
+
     log_params = %{
       "timestamp" => timestamp,
       "message" => message,
@@ -35,6 +39,10 @@ defmodule LogflareLogger.LogParams do
     else
       log_params
     end
+  end
+
+  def enrich(context, :vm) do
+    Map.merge(context, %{"vm" => %{"node" => "#{Node.self()}"}})
   end
 
   @doc """
