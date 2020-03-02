@@ -85,6 +85,22 @@ defmodule LogflareLogger.LogParamsTest do
   end
 
   describe "LogParams" do
+    test "handles report_cb" do
+      metadata = [report: %{}, report_cb: fn x -> x end, level: :info]
+      timestamp = Timex.now() |> Timex.to_erl()
+      lp = LogParams.encode(timestamp, :info, "test message", metadata)
+
+      assert %{
+               "message" => "test message",
+               "metadata" => %{
+                 "context" => %{"vm" => %{"node" => "nonode@nohost"}},
+                 "level" => "info",
+                 "report" => %{}
+               },
+               "timestamp" => _
+             } = lp
+    end
+
     test "puts level field in metadata" do
       timestamp = Timex.now() |> Timex.to_erl()
       lp = LogParams.encode(timestamp, :info, "test message", level: "nope")

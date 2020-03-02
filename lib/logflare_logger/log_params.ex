@@ -61,11 +61,12 @@ defmodule LogflareLogger.LogParams do
     |> Timex.format!("{ISO:Extended}")
   end
 
-  def encode_metadata(meta) do
+  def encode_metadata(meta) when is_list(meta) when is_map(meta) do
     meta
     |> encode_crash_reason()
     |> convert_mfa()
     |> traverse_convert()
+    |> Map.drop(["report_cb"])
   end
 
   @doc """

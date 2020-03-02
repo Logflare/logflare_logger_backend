@@ -14,6 +14,7 @@ defmodule LogflareLogger.Utils do
       domain
       gl
       time
+      mfa
     ]
   end
 end
