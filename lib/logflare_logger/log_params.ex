@@ -64,6 +64,7 @@ defmodule LogflareLogger.LogParams do
   def encode_metadata(meta) do
     meta
     |> encode_crash_reason()
+    |> convert_mfa()
     |> traverse_convert()
   end
 
@@ -79,6 +80,12 @@ defmodule LogflareLogger.LogParams do
   end
 
   def encode_crash_reason(meta), do: meta
+
+  def convert_mfa(%{mfa: {m, f, a}} = meta) when is_integer(a) do
+    %{meta | mfa: {m, f, "#{a}"}}
+  end
+
+  def convert_mfa(meta), do: meta
 
   def traverse_convert(%NaiveDateTime{} = v), do: to_string(v)
   def traverse_convert(%DateTime{} = v), do: to_string(v)
