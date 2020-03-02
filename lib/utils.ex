@@ -11,6 +11,9 @@ defmodule LogflareLogger.Utils do
       crash_reason
       initial_call
       registered_name
+      domain
+      gl
+      time
     ]
   end
 end

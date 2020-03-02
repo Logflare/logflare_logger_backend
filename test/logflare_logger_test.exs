@@ -44,8 +44,14 @@ defmodule LogflareLoggerTest do
         ApiClient.post_logs(
           any(),
           is(fn [logger, logflare_logger] ->
-            assert Map.drop(logger, ~w[timestamp]) ==
-                     Map.drop(logflare_logger, ~w[timestamp])
+            assert Map.drop(logger["metadata"]["context"], ~w[domain gl time]) ==
+                     Map.drop(logflare_logger["metadata"]["context"], ~w[domain gl time])
+
+            assert Map.drop(logger["metadata"], ~w[context]) ==
+                     Map.drop(logflare_logger["metadata"], ~w[context])
+
+            assert Map.drop(logger, ~w[metadata timestamp]) ==
+                     Map.drop(logflare_logger, ~w[metadata timestamp])
           end),
           any()
         )
