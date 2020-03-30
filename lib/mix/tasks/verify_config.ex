@@ -17,6 +17,8 @@ defmodule Mix.Tasks.LogflareLogger.VerifyConfig do
 
     client = ApiClient.new(%{api_key: api_key, url: url})
 
+    timestamp = NaiveDateTime.utc_now() |> NaiveDateTime.to_iso8601() |> Kernel.<>("Z")
+
     result =
       ApiClient.post_logs(
         client,
@@ -25,7 +27,7 @@ defmodule Mix.Tasks.LogflareLogger.VerifyConfig do
             "message" => "LogflareLogger has been properly setup",
             "metadata" => %{},
             "level" => "info",
-            "timestamp" => NaiveDateTime.utc_now() |> NaiveDateTime.to_iso8601()
+            "timestamp" => timestamp
           }
         ],
         source_id
