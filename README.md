@@ -53,17 +53,17 @@ LogflareLogger log payloads sent to Logflare API are encoded using [BERT](http:/
 
 At this moment LogflareLogger doesn't support full one-to-one logging of Elixir types and applies the following conversions:
 
-* atoms converted to strings
-* charlists are converted to strings
-* tuples converted to arrays
-* keyword lists converted to maps
-* structs converted to maps
-* NaiveDateTime and DateTime are converted using the `String.Chars` protocol
-* pids are converted to strings
+- atoms converted to strings
+- charlists are converted to strings
+- tuples converted to arrays
+- keyword lists converted to maps
+- structs converted to maps
+- NaiveDateTime and DateTime are converted using the `String.Chars` protocol
+- pids are converted to strings
 
 LogflareLogger doesn't support:
 
-* non-binary messages, e.g. `Logger.info(%{user_count: 1337})`
+- non-binary messages, e.g. `Logger.info(%{user_count: 1337})`
 
 ## Exceptions
 
@@ -83,7 +83,7 @@ by adding `logflare_logger_backend` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:logflare_logger_backend, "~> 0.7.1"}
+    {:logflare_logger_backend, "~> 0.7.2"}
   ]
 end
 ```
