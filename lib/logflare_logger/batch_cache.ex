@@ -35,27 +35,31 @@ defmodule LogflareLogger.BatchCache do
   end
 
   def flush(config) do
-    batch = get!()
+    case get() do
+      {:ok, batch} ->
+        if batch.count > 0 do
+          batch.events
+          |> Enum.reverse()
+          |> post_logs(config)
+          |> case do
+            {:ok, %Tesla.Env{status: status}} ->
+              unless status == 200 do
+                IO.warn("Logflare API warning: HTTP response status is #{status}")
+              end
 
-    if batch.count > 0 do
-      batch.events
-      |> Enum.reverse()
-      |> post_logs(config)
-      |> case do
-        {:ok, %Tesla.Env{status: status}} ->
-          unless status == 200 do
-            IO.warn("Logflare API warning: HTTP response status is #{status}")
+              get_and_update!(fn %{count: c, events: events} ->
+                events = events -- batch.events
+                %{count: c - batch.count, events: events}
+              end)
+
+            {:error, reason} ->
+              IO.warn("Logflare API error: #{inspect(reason)}")
+              :noop
           end
+        end
 
-          get_and_update!(fn %{count: c, events: events} ->
-            events = events -- batch.events
-            %{count: c - batch.count, events: events}
-          end)
-
-        {:error, reason} ->
-          IO.warn("Logflare API error: #{inspect(reason)}")
-          :noop
-      end
+      {:error, _} ->
+        :noop
     end
   end
 
@@ -63,8 +67,8 @@ defmodule LogflareLogger.BatchCache do
     Cachex.get_and_update!(@cache, @batch, fun)
   end
 
-  def get!() do
-    Cachex.get!(@cache, @batch)
+  def get() do
+    Cachex.get(@cache, @batch)
   end
 
   def post_logs(events, %{api_client: api_client, source_id: source_id}) do
