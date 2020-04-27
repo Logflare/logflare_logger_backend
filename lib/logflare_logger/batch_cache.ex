@@ -19,19 +19,25 @@ defmodule LogflareLogger.BatchCache do
   end
 
   def put(event, config) do
-    new_batch =
-      Cachex.get_and_update!(@cache, @batch, fn %{count: c, events: events} ->
-        events = Enum.take([event | events], @batch_limit)
-        count = if c + 1 > @batch_limit, do: @batch_limit, else: c + 1
+    case get() do
+      {:ok, _} ->
+        new_batch =
+          Cachex.get_and_update!(@cache, @batch, fn %{count: c, events: events} ->
+            events = Enum.take([event | events], @batch_limit)
+            count = if c + 1 > @batch_limit, do: @batch_limit, else: c + 1
 
-        %{count: count, events: events}
-      end)
+            %{count: count, events: events}
+          end)
 
-    if new_batch.count >= config.batch_max_size do
-      flush(config)
+        if new_batch.count >= config.batch_max_size do
+          flush(config)
+        end
+
+        new_batch
+
+      {:error, :no_cache} ->
+        nil
     end
-
-    new_batch
   end
 
   def flush(config) do
@@ -58,7 +64,7 @@ defmodule LogflareLogger.BatchCache do
           end
         end
 
-      {:error, _} ->
+      {:error, :no_cache} ->
         :noop
     end
   end
