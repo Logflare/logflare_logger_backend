@@ -16,7 +16,7 @@ config :logger,
   backends: [LogflareLogger.HttpBackend]
 
 config :logflare_logger_backend,
-  url: "https://api.logflare.app", # http://logflare.app is configured by defaul and you can set your own url
+  url: "https://api.logflare.app", # https://api.logflare.app is configured by default and you can set your own url
   api_key: "...",
   source_id: "...",
   flush_interval: 1_000, # minimum time in ms before a log batch is sent to the server ",
@@ -83,7 +83,7 @@ by adding `logflare_logger_backend` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:logflare_logger_backend, "~> 0.7.0"}
+    {:logflare_logger_backend, "~> 0.7.1"}
   ]
 end
 ```
