@@ -17,6 +17,7 @@ config :logger,
 
 config :logflare_logger_backend,
   url: "https://api.logflare.app", # https://api.logflare.app is configured by default and you can set your own url
+  level: :info, # Default LogflareLogger level is :info. Note that log messages are filtered by the :logger application first
   api_key: "...",
   source_id: "...",
   flush_interval: 1_000, # minimum time in ms before a log batch is sent to the server ",
