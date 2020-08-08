@@ -12,13 +12,13 @@ defmodule LogflareLogger.BatchCacheTest do
   test "cache puts events, gets events and resets batch" do
     ev1 = %{metadata: %{}, message: "log1"}
     ev2 = %{metadata: %{}, message: "log2"}
+    ev3 = %{metadata: %{}, message: "log3"}
 
     assert BatchCache.put(ev1, @backend_config) === %{count: 1, events: [ev1]}
-
     assert BatchCache.put(ev2, @backend_config) === %{count: 2, events: [ev2, ev1]}
 
-    BatchCache.put_initial()
+    BatchCache.clear()
 
-    assert BatchCache.get!() === %{count: 0, events: []}
+    assert BatchCache.put(ev3, @backend_config) === %{count: 1, events: [ev3]}
   end
 end
