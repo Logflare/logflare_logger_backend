@@ -87,7 +87,7 @@ defmodule LogflareLogger.LogParamsTest do
   describe "LogParams" do
     test "handles report_cb" do
       metadata = [report: %{}, report_cb: fn x -> x end, level: :info]
-      timestamp = Timex.now() |> Timex.to_erl()
+      timestamp = :calendar.universal_time()
       lp = LogParams.encode(timestamp, :info, "test message", metadata)
 
       assert %{
@@ -102,14 +102,14 @@ defmodule LogflareLogger.LogParamsTest do
     end
 
     test "puts level field in metadata" do
-      timestamp = Timex.now() |> Timex.to_erl()
+      timestamp = :calendar.universal_time()
       lp = LogParams.encode(timestamp, :info, "test message", level: "nope")
 
       assert lp["metadata"]["level"] == "info"
     end
 
     test "vm and node data is present in system context" do
-      timestamp = Timex.now() |> Timex.to_erl()
+      timestamp = :calendar.universal_time()
       lp = LogParams.encode(timestamp, :info, "test message", level: "nope")
 
       assert lp["metadata"]["context"]["vm"]["node"] == "#{Node.self()}"
@@ -117,7 +117,7 @@ defmodule LogflareLogger.LogParamsTest do
   end
 
   defp build_user_context(metadata) do
-    timestamp = Timex.now() |> Timex.to_erl()
+    timestamp = :calendar.universal_time()
 
     LogParams.encode(timestamp, :info, "test message", metadata)
     |> Map.get("metadata")

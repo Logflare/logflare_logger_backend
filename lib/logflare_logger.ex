@@ -20,15 +20,15 @@ defmodule LogflareLogger do
   end
 
   def log(level, message, metadata) do
-    datetime = Timex.now() |> Timex.to_erl()
+    datetime = :calendar.universal_time()
     config = :ets.lookup(:logflare_logger_table, :config) |> Keyword.get(:config)
 
     metadata =
       metadata
-      |> Enum.into(Map.new())
-      |> Map.merge(Logger.metadata() |> Enum.into(Map.new()))
+      |> Map.new()
+      |> Map.merge(Map.new(Logger.metadata()))
       |> Map.merge(%{pid: self()})
-      |> Enum.into(Keyword.new())
+      |> Enum.to_list()
 
     log_event = Formatter.format_event(level, message, datetime, metadata, config)
     BatchCache.put(log_event, config)
