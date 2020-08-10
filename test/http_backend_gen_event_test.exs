@@ -16,7 +16,7 @@ defmodule LogflareLogger.HttpBackendTest do
 
   setup_all do
     on_exit(fn ->
-      BatchCache.put_initial()
+      BatchCache.clear()
       Logger.flush()
     end)
 
