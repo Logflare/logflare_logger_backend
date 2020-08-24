@@ -58,6 +58,15 @@ defmodule LogflareLogger.LogParamsTest do
       assert is_binary(pid)
     end
 
+    test "function to string" do
+      user_context =
+        build_user_context(user_field: %{error_response: [:invalid, &String.to_atom/1]})
+
+      %{"user_field" => %{"error_response" => [invalid, fun]}} = user_context
+      assert fun == "&String.to_atom/1"
+      assert invalid == "invalid"
+    end
+
     test "NaiveDateTime and DateTime to String.Chars protocol" do
       {:ok, ndt} = NaiveDateTime.new(1337, 4, 19, 0, 0, 0)
 

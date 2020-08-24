@@ -140,6 +140,8 @@ defmodule LogflareLogger.LogParams do
 
   def traverse_convert(x) when is_atom(x), do: Atom.to_string(x)
 
+  def traverse_convert(x) when is_function(x), do: inspect(x)
+
   def traverse_convert(x) when is_pid(x) do
     x
     |> :erlang.pid_to_list()
