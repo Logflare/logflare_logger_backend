@@ -55,18 +55,23 @@ defmodule LogflareLogger.LogParams do
   @doc """
   Converts erlang datetime tuple into ISO:Extended binary.
   """
-  def encode_timestamp({{year, month, day}, {hour, minute, second, milli}}) do
-    {:ok, naive} = NaiveDateTime.new(year, month, day, hour, minute, second, milli * 1000)
 
-    naive
-    |> NaiveDateTime.to_iso8601(:extended)
-    |> Kernel.<>("Z")
+  def encode_timestamp({date, {hour, minute, second}}) do
+    encode_timestamp({date, {hour, minute, second, 0}})
   end
 
-  def encode_timestamp({{year, month, day}, {hour, minute, second}}) do
-    {:ok, naive} = NaiveDateTime.new(year, month, day, hour, minute, second)
+  def encode_timestamp({date, {hour, minute, second, milli}}) do
+    erldt =
+      {date, {hour, minute, second}}
+      |> :calendar.local_time_to_universal_time_dst()
+      |> case do
+        [] -> {date, {hour, minute, second}}
+        [dt_utc] -> dt_utc
+        [_, dt_utc] -> dt_utc
+      end
 
-    naive
+    erldt
+    |> NaiveDateTime.from_erl!({round(milli * 1000), 6})
     |> NaiveDateTime.to_iso8601(:extended)
     |> Kernel.<>("Z")
   end

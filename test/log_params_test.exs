@@ -94,6 +94,29 @@ defmodule LogflareLogger.LogParamsTest do
   end
 
   describe "LogParams" do
+    test "correctly encodes timestamp datetimes without millis" do
+      {date, time} = :calendar.local_time()
+      {hour, minute, second} = time
+
+      utc = %{NaiveDateTime.utc_now() | microsecond: {0, 6}}
+
+      utcstring = NaiveDateTime.to_iso8601(utc, :extended) <> "Z"
+
+      assert utcstring == LogParams.encode_timestamp({date, time})
+    end
+
+    test "correctly encdoes timestamp datetimes with millis" do
+      {date, time} = :calendar.local_time()
+      {hour, minute, second} = time
+
+      utc = %{NaiveDateTime.utc_now() | microsecond: {314_159, 6}}
+      utcstring = NaiveDateTime.to_iso8601(utc, :extended) <> "Z"
+      {millis, _} = utc.microsecond
+
+      assert utcstring ==
+               LogParams.encode_timestamp({date, {hour, minute, second, millis / 1000}})
+    end
+
     test "handles report_cb" do
       metadata = [report: %{}, report_cb: fn x -> x end, level: :info]
       timestamp = :calendar.universal_time()
