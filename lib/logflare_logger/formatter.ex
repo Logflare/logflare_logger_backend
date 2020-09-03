@@ -12,7 +12,7 @@ defmodule LogflareLogger.Formatter do
           "timestamp" => NaiveDateTime.to_iso8601(NaiveDateTime.utc_now(), :extended) <> "Z",
           "message" => "LogflareLogger formatter error: #{inspect(e, safe: true)}",
           "metadata" => %{
-            "log_params_with_errors" => %{
+            "formatter_error_params" => %{
               "metadata" =>
                 inspect(metadata, safe: true, limit: :infinity, printable_limit: :infinity),
               "timestamp" => inspect(ts),
