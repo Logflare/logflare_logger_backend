@@ -62,21 +62,15 @@ defmodule LogflareLogger.HttpBackend do
     # 1. Dynamically confgiured options with Logger.configure(...)
     # 2. Application environment
     # 3. Current config
-    options =
-      @app
-      |> Application.get_all_env()
-      |> Keyword.merge(options)
 
-    url = Keyword.get(options, :url) || @default_api_url
-    # api_key = Keyword.get(options, :api_key)
+    url = get_config(:url, default: @default_api_url)
     api_key = get_config(:api_key)
-    # source_id = Keyword.get(options, :source_id)
     source_id = get_config(:source_id)
-    level = Keyword.get(options, :level, config.level)
-    format = Keyword.get(options, :format, config.format)
-    metadata = Keyword.get(options, :metadata, config.metadata)
-    batch_max_size = Keyword.get(options, :batch_max_size, config.batch_max_size)
-    flush_interval = Keyword.get(options, :flush_interval, config.flush_interval)
+    level = get_config(:level, default: config.level)
+    format = get_config(:format, default: config.format)
+    metadata = get_config(:metadata, default: config.metadata, type: :list)
+    batch_max_size = get_config(:batch_max_size, default: config.batch_max_size)
+    flush_interval = get_config(:flush_interval, default: config.flush_interval)
 
     CLI.throw_on_missing_url!(url)
     CLI.throw_on_missing_source!(source_id)
@@ -118,7 +112,6 @@ defmodule LogflareLogger.HttpBackend do
            system_func = fn -> get_from_system_environment(env_key) end do
         save_system_to_application(key, system_func)
       end
-      |> IO.inspect()
 
     convert_type(result, type, default)
   end
