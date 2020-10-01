@@ -68,8 +68,10 @@ defmodule LogflareLogger.HttpBackend do
       |> Keyword.merge(options)
 
     url = Keyword.get(options, :url) || @default_api_url
-    api_key = Keyword.get(options, :api_key)
-    source_id = Keyword.get(options, :source_id)
+    # api_key = Keyword.get(options, :api_key)
+    api_key = get_config(:api_key)
+    # source_id = Keyword.get(options, :source_id)
+    source_id = get_config(:source_id)
     level = Keyword.get(options, :level, config.level)
     format = Keyword.get(options, :format, config.format)
     metadata = Keyword.get(options, :metadata, config.metadata)
@@ -104,6 +106,60 @@ defmodule LogflareLogger.HttpBackend do
     :ets.insert(:logflare_logger_table, {:config, config})
 
     config
+  end
+
+  defp get_config(key, opts \\ []) when is_atom(key) do
+    default = Keyword.get(opts, :default)
+    type = Keyword.get(opts, :type)
+
+    result =
+      with :not_found <- get_from_application_environment(key),
+           env_key = config_key_to_system_environment_key(key),
+           system_func = fn -> get_from_system_environment(env_key) end do
+        save_system_to_application(key, system_func)
+      end
+      |> IO.inspect()
+
+    convert_type(result, type, default)
+  end
+
+  defp convert_type({:ok, value}, nil, _), do: value
+  defp convert_type({:ok, value}, :list, _) when is_list(value), do: value
+  defp convert_type({:ok, value}, :list, _) when is_binary(value), do: String.split(value, ",")
+  defp convert_type(_, _, default), do: default
+
+  defp save_system_to_application(key, func) do
+    case func.() do
+      :not_found ->
+        :not_found
+
+      {:ok, value} ->
+        Application.put_env(:logflare_logger_backend, key, value)
+        {:ok, value}
+    end
+  end
+
+  defp get_from_application_environment(key) when is_atom(key) do
+    case Application.fetch_env(:logflare_logger_backend, key) do
+      {:ok, {:system, env_var}} -> get_from_system_environment(env_var)
+      {:ok, value} -> {:ok, value}
+      :error -> :not_found
+    end
+  end
+
+  defp get_from_system_environment(key) when is_binary(key) do
+    case System.get_env(key) do
+      nil -> :not_found
+      value -> {:ok, value}
+    end
+  end
+
+  defp config_key_to_system_environment_key(key) when is_atom(key) do
+    string_key =
+      Atom.to_string(key)
+      |> String.upcase()
+
+    "LOGFLARE_#{string_key}"
   end
 
   # Batching and flushing
