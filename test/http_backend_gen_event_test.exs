@@ -61,6 +61,8 @@ defmodule LogflareLogger.HttpBackendTest do
         end
       )
 
+      Process.sleep(200)
+
       assert_called(
         ApiClient.post_logs(
           any(),

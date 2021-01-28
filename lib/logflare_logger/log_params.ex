@@ -81,7 +81,7 @@ defmodule LogflareLogger.LogParams do
     |> encode_crash_reason()
     |> convert_mfa()
     |> traverse_convert()
-    |> Map.drop(["report_cb"])
+    |> Map.drop(["report_cb", "erl_level"])
   end
 
   @doc """

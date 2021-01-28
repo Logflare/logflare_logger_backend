@@ -5,72 +5,93 @@ defmodule LogflareLogger.BatchCache do
   Doesn't error or drop the message if the API is unresponsive, holds them
   """
 
-  @cache __MODULE__
-  use Agent
-
+  alias LogflareLogger.Repo
+  alias LogflareLogger.PendingLoggerEvent
   alias LogflareLogger.{ApiClient}
+  import Ecto.Query
 
   # batch limit prevents runaway memory usage if API is unresponsive
   @batch_limit 1_000
 
-  def start_link(_) do
-    Agent.start_link(fn -> initial_state() end, name: @cache)
-  end
-
   def put(event, config) do
-    if pid = Process.whereis(@cache) do
-      new_batch =
-        Agent.get_and_update(pid, fn %{count: c, events: events} ->
-          events = Enum.take([event | events], @batch_limit)
-          count = if c + 1 > @batch_limit, do: @batch_limit, else: c + 1
-          batch = %{count: count, events: events}
-          {batch, batch}
-        end)
+    Repo.insert!(%PendingLoggerEvent{body: event})
 
-      if new_batch.count >= config.batch_max_size do
-        flush(config)
-      end
+    pending_events = Repo.all(PendingLoggerEvent) |> Enum.sort_by(& &1.id, :asc)
+    pending_events_count = Enum.count(pending_events)
 
-      new_batch
-    else
-      nil
+    if pending_events_count > @batch_limit do
+      pending_events
+      |> Enum.take(pending_events_count - @batch_limit)
+      |> Enum.each(&Repo.delete/1)
     end
+
+    events = Repo.all(PendingLoggerEvent) |> Enum.sort_by(& &1.id, :desc) |> Enum.map(& &1.body)
+    events_count = Enum.count(events)
+    new_batch = %{events: events, count: events_count}
+
+    if new_batch.count >= config.batch_max_size do
+      flush(config)
+    end
+
+    new_batch
   end
 
   def flush(config) do
-    with pid when pid != nil <- Process.whereis(@cache),
-         %{count: count, events: events} when count > 0 <- Agent.get(pid, & &1) do
-      events
-      |> Enum.reverse()
-      |> post_logs(config)
-      |> case do
-        {:ok, %Tesla.Env{status: status}} ->
-          unless status == 200 do
-            IO.warn("Logflare API warning: HTTP response status is #{status}")
-          end
+    api_request_started_at = System.monotonic_time()
 
-          Agent.update(pid, fn %{count: batched_count, events: batched_events} ->
-            %{count: batched_count - count, events: batched_events -- events}
-          end)
+    pending_events_not_in_flight =
+      from(PendingLoggerEvent)
+      |> where([le], le.api_request_started_at == 0)
+      |> Repo.all()
 
-        {:error, reason} ->
-          IO.warn("Logflare API error: #{inspect(reason)}")
-          :noop
-      end
+    if not Enum.empty?(pending_events_not_in_flight) do
+      ples =
+        pending_events_not_in_flight
+        |> Enum.map(fn ple ->
+          {:ok, ple} =
+            ple
+            |> PendingLoggerEvent.changeset(%{api_request_started_at: api_request_started_at})
+            |> Repo.update()
+
+          ple
+        end)
+
+      Task.start(fn ->
+        ples
+        |> post_logs(config)
+        |> case do
+          {:ok, %Tesla.Env{status: status}} ->
+            unless status == 200 do
+              IO.warn("Logflare API warning: HTTP response status is #{status}")
+            end
+
+            for ple <- ples do
+              Repo.delete(ple)
+            end
+
+          {:error, reason} ->
+            IO.warn("Logflare API error: #{inspect(reason)}")
+
+            for ple <- ples do
+              ple
+              |> PendingLoggerEvent.changeset(%{api_request_started_at: 0})
+              |> Repo.update()
+            end
+
+            :noop
+        end
+      end)
     else
-      _ -> :noop
+      :noop
     end
   end
 
   def clear do
-    Agent.update(@cache, fn _ -> initial_state() end)
-  end
-
-  defp initial_state() do
-    %{count: 0, events: []}
+    Repo.all(PendingLoggerEvent) |> Enum.map(&Repo.delete(&1))
   end
 
   def post_logs(events, %{api_client: api_client, source_id: source_id}) do
+    events = Enum.map(events, & &1.body)
     ApiClient.post_logs(api_client, events, source_id)
   end
 end

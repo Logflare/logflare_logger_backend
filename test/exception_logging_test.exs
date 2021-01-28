@@ -30,7 +30,7 @@ defmodule LogflareLogger.ExceptionLoggingTest do
     spawn(fn -> 3.14 / 0 end)
     spawn(fn -> Enum.find(nil, & &1) end)
 
-    Process.sleep(1_000)
+    Process.sleep(500)
 
     assert_called(
       ApiClient.post_logs(

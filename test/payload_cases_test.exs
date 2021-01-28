@@ -36,7 +36,7 @@ defmodule LogflareLogger.PayloadCasesTest do
         test_list: List.to_tuple(members)
       )
 
-      Process.sleep(100)
+      Process.sleep(200)
       assert_called(ApiClient.post_logs(any(), any(), any()))
     end
   end
