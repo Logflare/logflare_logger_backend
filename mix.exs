@@ -43,7 +43,7 @@ defmodule LogflareLogger.MixProject do
       {:typed_struct, ">= 0.0.0"},
       {:bertex, "~> 1.3"},
       {:hackney, "~> 1.10"},
-      {:placebo, "~> 1.2", only: :test},
+      {:placebo, "~> 2.0", only: :test},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:etso, "~> 0.1.2"}
     ]
