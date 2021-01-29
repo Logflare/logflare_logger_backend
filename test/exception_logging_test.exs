@@ -1,7 +1,7 @@
 defmodule LogflareLogger.ExceptionLoggingTest do
   @moduledoc false
   use ExUnit.Case
-  alias LogflareLogger.{ApiClient, HttpBackend}
+  alias LogflareLogger.HttpBackend
   require Logger
   use Placebo
 
@@ -23,7 +23,7 @@ defmodule LogflareLogger.ExceptionLoggingTest do
   end
 
   test "logger backends sends a formatted log event after an exception" do
-    allow(ApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{status: 200}})
+    allow(LogflareApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{status: 200}})
 
     spawn(fn -> 3.14 / 0 end)
     spawn(fn -> 3.14 / 0 end)
@@ -33,7 +33,7 @@ defmodule LogflareLogger.ExceptionLoggingTest do
     Process.sleep(500)
 
     assert_called(
-      ApiClient.post_logs(
+      LogflareApiClient.post_logs(
         any(),
         is(fn xs ->
           [

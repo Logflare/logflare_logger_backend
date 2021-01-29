@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.LogflareLogger.VerifyConfig do
-  alias LogflareLogger.{CLI, ApiClient}
+  alias LogflareLogger.CLI
   use Mix.Task
   @app :logflare_logger_backend
 
@@ -15,12 +15,12 @@ defmodule Mix.Tasks.LogflareLogger.VerifyConfig do
     CLI.throw_on_missing_source!(source_id)
     CLI.throw_on_missing_url!(url)
 
-    client = ApiClient.new(%{api_key: api_key, url: url})
+    client = LogflareApiClient.new(%{api_key: api_key, url: url})
 
     timestamp = NaiveDateTime.utc_now() |> NaiveDateTime.to_iso8601() |> Kernel.<>("Z")
 
     result =
-      ApiClient.post_logs(
+      LogflareApiClient.post_logs(
         client,
         [
           %{

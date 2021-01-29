@@ -6,7 +6,7 @@ defmodule LogflareLogger.HttpBackend do
   @app :logflare_logger_backend
   @behaviour :gen_event
   require Logger
-  alias LogflareLogger.{ApiClient, Formatter, BatchCache, CLI}
+  alias LogflareLogger.{Formatter, BatchCache, CLI}
   alias LogflareLogger.BackendConfig, as: Config
 
   @type level :: Logger.level()
@@ -80,7 +80,7 @@ defmodule LogflareLogger.HttpBackend do
     CLI.throw_on_missing_source!(source_id)
     CLI.throw_on_missing_api_key!(api_key)
 
-    api_client = ApiClient.new(%{url: url, api_key: api_key})
+    api_client = LogflareApiClient.new(%{url: url, api_key: api_key})
 
     config =
       struct!(

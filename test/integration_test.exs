@@ -2,10 +2,9 @@ defmodule LogflareLogger.IntegrationTest do
   @moduledoc false
   use ExUnit.Case
   alias LogflareLogger.{HttpBackend, TestUtils}
-  alias LogflareLogger.ApiClient
   require Logger
 
-  @path ApiClient.api_path()
+  @path LogflareApiClient.api_path()
 
   @logger_backend HttpBackend
   @api_key "l3kh47jsakf2370dasg"

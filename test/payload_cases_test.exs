@@ -1,7 +1,7 @@
 defmodule LogflareLogger.PayloadCasesTest do
   @moduledoc false
   use ExUnit.Case
-  alias LogflareLogger.{ApiClient, HttpBackend}
+  alias LogflareLogger.HttpBackend
   require Logger
   use Placebo
 
@@ -28,8 +28,12 @@ defmodule LogflareLogger.PayloadCasesTest do
 
   describe "payload edge cases" do
     test "simple tuple" do
-      allow(ApiClient.new(any()), return: %Tesla.Client{})
-      allow(ApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{status: 200}})
+      allow(LogflareApiClient.new(any()), return: %Tesla.Client{})
+
+      allow(LogflareApiClient.post_logs(any(), any(), any()),
+        return: {:ok, %Tesla.Env{status: 200}}
+      )
+
       members = ["chase", "bob", "drew"]
 
       Logger.info("Test list!",
@@ -37,7 +41,7 @@ defmodule LogflareLogger.PayloadCasesTest do
       )
 
       Process.sleep(200)
-      assert_called(ApiClient.post_logs(any(), any(), any()))
+      assert_called(LogflareApiClient.post_logs(any(), any(), any()))
     end
   end
 end

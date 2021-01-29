@@ -4,7 +4,7 @@ defmodule LogflareLogger.MixProject do
   def project do
     [
       app: :logflare_logger_backend,
-      version: "0.8.0-rc.0",
+      version: "0.8.0-rc.1",
       elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -36,7 +36,7 @@ defmodule LogflareLogger.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:mix_test_watch, ">= 0.9.0", only: :dev, runtime: false},
+      {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
       {:jason, "~> 1.0"},
       {:bypass, "~> 2.0", only: :test},
       {:tesla, "~> 1.3"},
@@ -45,7 +45,8 @@ defmodule LogflareLogger.MixProject do
       {:hackney, "~> 1.10"},
       {:placebo, "~> 2.0", only: :test},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
-      {:etso, "~> 0.1.2"}
+      {:etso, "~> 0.1.2"},
+      {:logflare_api_client, github: "logflare/logflare_api_client"}
     ]
   end
 

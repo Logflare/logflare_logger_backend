@@ -1,6 +1,6 @@
 defmodule LogflareLoggerTest do
   @moduledoc false
-  alias LogflareLogger.{ApiClient, HttpBackend}
+  alias LogflareLogger.HttpBackend
   use ExUnit.Case
   import LogflareLogger
   doctest LogflareLogger
@@ -31,8 +31,11 @@ defmodule LogflareLoggerTest do
 
   describe "debug, info, warn, error functions" do
     test "uses same configuration as Logger functions" do
-      allow(ApiClient.new(any()), return: %Tesla.Client{})
-      allow(ApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{status: 200}})
+      allow(LogflareApiClient.new(any()), return: %Tesla.Client{})
+
+      allow(LogflareApiClient.post_logs(any(), any(), any()),
+        return: {:ok, %Tesla.Env{status: 200}}
+      )
 
       LogflareLogger.context(%{context_key: [:context_value, 1, "string"]})
       Logger.bare_log(:info, "msg", data: %{a: 1})
@@ -41,7 +44,7 @@ defmodule LogflareLoggerTest do
       Process.sleep(200)
 
       assert_called(
-        ApiClient.post_logs(
+        LogflareApiClient.post_logs(
           any(),
           is(fn [logger, logflare_logger] ->
             assert Map.drop(logger["metadata"]["context"], ~w[domain gl time]) ==
