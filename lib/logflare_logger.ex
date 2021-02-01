@@ -20,7 +20,9 @@ defmodule LogflareLogger do
   end
 
   def log(level, message, metadata) do
-    datetime = :calendar.universal_time()
+    dt = NaiveDateTime.utc_now()
+    {date, {hour, minute, second}} = NaiveDateTime.to_erl(dt)
+    datetime = {date, {hour, minute, second, dt.microsecond}}
     config = :ets.lookup(:logflare_logger_table, :config) |> Keyword.get(:config)
 
     metadata =
