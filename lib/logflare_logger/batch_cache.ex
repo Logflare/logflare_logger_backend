@@ -15,7 +15,7 @@ defmodule LogflareLogger.BatchCache do
   def put(event, config) do
     Repo.insert!(%PendingLoggerEvent{body: event})
 
-    pending_events = Repo.all(PendingLoggerEvent) |> Enum.sort_by(& &1.id, :asc)
+    pending_events = PendingLoggerEvent |> Repo.all() |> sort_by_created_asc()
     pending_events_count = Enum.count(pending_events)
 
     if pending_events_count > @batch_limit do
@@ -24,7 +24,7 @@ defmodule LogflareLogger.BatchCache do
       |> Enum.each(&Repo.delete/1)
     end
 
-    events = Repo.all(PendingLoggerEvent) |> Enum.sort_by(& &1.id, :desc) |> Enum.map(& &1.body)
+    events = PendingLoggerEvent |> Repo.all() |> sort_by_created_asc() |> Enum.map(& &1.body)
     events_count = Enum.count(events)
     new_batch = %{events: events, count: events_count}
 
@@ -42,6 +42,7 @@ defmodule LogflareLogger.BatchCache do
       from(PendingLoggerEvent)
       |> where([le], le.api_request_started_at == 0)
       |> Repo.all()
+      |> sort_by_created_asc()
 
     if not Enum.empty?(pending_events_not_in_flight) do
       ples =
@@ -92,5 +93,10 @@ defmodule LogflareLogger.BatchCache do
   def post_logs(events, %{api_client: api_client, source_id: source_id}) do
     events = Enum.map(events, & &1.body)
     LogflareApiClient.post_logs(api_client, events, source_id)
+  end
+
+  def sort_by_created_asc(pending_events) do
+    # etso id is System.monotonic_time
+    Enum.sort_by(pending_events, & &1.id, :asc)
   end
 end
