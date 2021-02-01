@@ -46,7 +46,7 @@ defmodule LogflareLogger.MixProject do
       {:placebo, "~> 2.0", only: :test},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:etso, "~> 0.1.2"},
-      {:logflare_api_client, github: "logflare/logflare_api_client"}
+      {:logflare_api_client, "~> 0.2.0"}
     ]
   end
 
