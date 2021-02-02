@@ -10,7 +10,7 @@ defmodule LogflareLogger.BatchCache do
   import Ecto.Query
 
   # batch limit prevents runaway memory usage if API is unresponsive
-  @batch_limit 1_000
+  @batch_limit 10_000
 
   def put(event, config) do
     Repo.insert!(%PendingLoggerEvent{body: event})
