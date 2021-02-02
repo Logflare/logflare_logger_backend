@@ -77,7 +77,7 @@ defmodule LogflareLogger do
     context()
   end
 
-  @spec reset_context([atom(), ...]) :: term
+  @spec reset_context(keyword) :: map
   def reset_context(keys) when is_list(keys) do
     Logger.reset_metadata(keys)
     context()
