@@ -61,7 +61,7 @@ defmodule LogflareLogger.BatchCache do
         |> post_logs(config)
         |> case do
           {:ok, %Tesla.Env{status: status}} ->
-            unless status == 200 do
+            unless status in 200..299 do
               IO.warn("Logflare API warning: HTTP response status is #{status}")
             end
 
