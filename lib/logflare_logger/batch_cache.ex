@@ -13,26 +13,30 @@ defmodule LogflareLogger.BatchCache do
   @batch_limit 10_000
 
   def put(event, config) do
-    Repo.insert!(%PendingLoggerEvent{body: event})
+    if GenServer.whereis(Repo) do
+      Repo.insert!(%PendingLoggerEvent{body: event})
 
-    pending_events = PendingLoggerEvent |> Repo.all() |> sort_by_created_asc()
-    pending_events_count = Enum.count(pending_events)
+      pending_events = PendingLoggerEvent |> Repo.all() |> sort_by_created_asc()
+      pending_events_count = Enum.count(pending_events)
 
-    if pending_events_count > @batch_limit do
-      pending_events
-      |> Enum.take(pending_events_count - @batch_limit)
-      |> Enum.each(&Repo.delete/1)
+      if pending_events_count > @batch_limit do
+        pending_events
+        |> Enum.take(pending_events_count - @batch_limit)
+        |> Enum.each(&Repo.delete/1)
+      end
+
+      events = PendingLoggerEvent |> Repo.all() |> sort_by_created_asc() |> Enum.map(& &1.body)
+      events_count = Enum.count(events)
+      new_batch = %{events: events, count: events_count}
+
+      if new_batch.count >= config.batch_max_size do
+        flush(config)
+      end
+
+      new_batch
+    else
+      %{events: [], count: 0}
     end
-
-    events = PendingLoggerEvent |> Repo.all() |> sort_by_created_asc() |> Enum.map(& &1.body)
-    events_count = Enum.count(events)
-    new_batch = %{events: events, count: events_count}
-
-    if new_batch.count >= config.batch_max_size do
-      flush(config)
-    end
-
-    new_batch
   end
 
   def flush(config) do
