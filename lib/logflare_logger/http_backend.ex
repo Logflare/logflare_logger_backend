@@ -110,7 +110,9 @@ defmodule LogflareLogger.HttpBackend do
 
   @spec flush!(Config.t()) :: {:ok, Config.t()}
   defp flush!(%Config{} = config) do
-    BatchCache.flush(config)
+    if GenServer.whereis(LogflareLogger.Repo) do
+      BatchCache.flush(config)
+    end
 
     schedule_flush(config)
   end
