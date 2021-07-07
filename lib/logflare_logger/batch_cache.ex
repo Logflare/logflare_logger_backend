@@ -27,15 +27,14 @@ defmodule LogflareLogger.BatchCache do
 
       events = pending_events |> Enum.map(& &1.body)
       events_count = Enum.count(events)
-      new_batch = %{events: events, count: events_count}
 
-      if new_batch.count >= config.batch_max_size do
+      if events_count >= config.batch_max_size do
         flush(config)
       end
 
-      new_batch
+      {:ok, :insert_successful}
     else
-      %{events: [], count: 0}
+      {:error, :repo_not_found}
     end
   end
 
