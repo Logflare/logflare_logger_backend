@@ -16,7 +16,7 @@ defmodule LogflareLogger.BatchCache do
     if GenServer.whereis(Repo) do
       Repo.insert!(%PendingLoggerEvent{body: event})
 
-      pending_events = PendingLoggerEvent |> Repo.all() |> sort_by_created_asc()
+      pending_events = pending_events_not_in_flight()
       pending_events_count = Enum.count(pending_events)
 
       if pending_events_count > @batch_limit do
@@ -25,7 +25,7 @@ defmodule LogflareLogger.BatchCache do
         |> Enum.each(&Repo.delete/1)
       end
 
-      events = PendingLoggerEvent |> Repo.all() |> sort_by_created_asc() |> Enum.map(& &1.body)
+      events = pending_events |> Enum.map(& &1.body)
       events_count = Enum.count(events)
       new_batch = %{events: events, count: events_count}
 
@@ -42,15 +42,11 @@ defmodule LogflareLogger.BatchCache do
   def flush(config) do
     api_request_started_at = System.monotonic_time()
 
-    pending_events_not_in_flight =
-      from(PendingLoggerEvent)
-      |> where([le], le.api_request_started_at == 0)
-      |> Repo.all()
-      |> sort_by_created_asc()
+    pending_events = pending_events_not_in_flight()
 
-    if not Enum.empty?(pending_events_not_in_flight) do
+    if not Enum.empty?(pending_events) do
       ples =
-        pending_events_not_in_flight
+        pending_events
         |> Enum.map(fn ple ->
           {:ok, ple} =
             ple
@@ -64,6 +60,10 @@ defmodule LogflareLogger.BatchCache do
         ples
         |> post_logs(config)
         |> case do
+          # api_request_started_at was set and somewhere these events are not getting deleted or updated
+          # creates pending events which never get flushed
+          # if this builds up to max_batch_size logs were POSTed one by one
+          # TODO: somehow flush stuck in-flight events
           {:ok, %Tesla.Env{status: status, body: body}} ->
             unless status in 200..299 do
               IO.warn(
@@ -104,5 +104,19 @@ defmodule LogflareLogger.BatchCache do
   def sort_by_created_asc(pending_events) do
     # etso id is System.monotonic_time
     Enum.sort_by(pending_events, & &1.id, :asc)
+  end
+
+  def events_in_flight() do
+    from(PendingLoggerEvent)
+    |> where([le], le.api_request_started_at != 0)
+    |> Repo.all()
+    |> sort_by_created_asc()
+  end
+
+  def pending_events_not_in_flight() do
+    from(PendingLoggerEvent)
+    |> where([le], le.api_request_started_at == 0)
+    |> Repo.all()
+    |> sort_by_created_asc()
   end
 end
