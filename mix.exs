@@ -39,7 +39,6 @@ defmodule LogflareLogger.MixProject do
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
       {:jason, "~> 1.0"},
       {:bypass, "~> 2.0", only: :test},
-      {:tesla, "~> 1.4"},
       {:typed_struct, ">= 0.0.0"},
       {:bertex, "~> 1.3"},
       {:placebo, "~> 2.0", only: :test},
