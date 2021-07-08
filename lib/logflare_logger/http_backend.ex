@@ -2,9 +2,11 @@ defmodule LogflareLogger.HttpBackend do
   @moduledoc """
   Implements :gen_event behaviour, handles incoming Logger messages
   """
+
   @default_api_url "https://api.logflare.app"
   @app :logflare_logger_backend
   @behaviour :gen_event
+
   require Logger
   alias LogflareLogger.{Formatter, BatchCache, CLI}
   alias LogflareLogger.BackendConfig, as: Config
@@ -12,11 +14,14 @@ defmodule LogflareLogger.HttpBackend do
   @type level :: Logger.level()
   @type message :: Logger.message()
   @type metadata :: Logger.metadata()
-
   @type log_msg :: {level, pid, {Logger, message, term, metadata}} | :flush
 
   @spec init(__MODULE__, keyword) :: {:ok, Config.t()}
   def init(__MODULE__, options \\ []) when is_list(options) do
+    Logger.info("#{__MODULE__} v#{Mix.Project.config()[:version]} started.")
+
+    schedule_in_flight_check()
+
     options
     |> configure_merge(%Config{})
     |> schedule_flush()
@@ -40,6 +45,20 @@ defmodule LogflareLogger.HttpBackend do
   end
 
   def handle_info(:flush, config), do: flush!(config)
+
+  def handle_info(:in_flight_check, config) do
+    # If we somehow have events in flight stuck in our Repo, they get reset here to get flushed to Logflare.
+    count = BatchCache.events_in_flight() |> BatchCache.reset_events_in_flight() |> Enum.count()
+
+    if count > 0,
+      do:
+        Logger.warn(
+          "#{__MODULE__} resetting #{count} log events in flight. If this continues please submit an issue."
+        )
+
+    {:ok, config}
+  end
+
   def handle_info(_term, config), do: {:ok, config}
 
   @spec handle_call({:configure, keyword()}, Config.t()) :: {:ok, :ok, Config.t()}
@@ -121,6 +140,10 @@ defmodule LogflareLogger.HttpBackend do
   defp schedule_flush(%Config{} = config) do
     Process.send_after(self(), :flush, config.flush_interval)
     {:ok, config}
+  end
+
+  defp schedule_in_flight_check() do
+    Process.send_after(self(), :in_flight_check)
   end
 
   # Events

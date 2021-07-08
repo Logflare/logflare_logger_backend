@@ -59,10 +59,6 @@ defmodule LogflareLogger.BatchCache do
         ples
         |> post_logs(config)
         |> case do
-          # api_request_started_at was set and somewhere these events are not getting deleted or updated
-          # creates pending events which never get flushed
-          # if this builds up to max_batch_size logs were POSTed one by one
-          # TODO: somehow flush stuck in-flight events
           {:ok, %Tesla.Env{status: status, body: body}} ->
             unless status in 200..299 do
               IO.warn(
@@ -77,11 +73,7 @@ defmodule LogflareLogger.BatchCache do
           {:error, reason} ->
             IO.warn("Logflare API error: #{inspect(reason)}")
 
-            for ple <- ples do
-              ple
-              |> PendingLoggerEvent.changeset(%{api_request_started_at: 0})
-              |> Repo.update()
-            end
+            reset_events_in_flight(ples)
 
             :noop
         end
@@ -117,5 +109,13 @@ defmodule LogflareLogger.BatchCache do
     |> where([le], le.api_request_started_at == 0)
     |> Repo.all()
     |> sort_by_created_asc()
+  end
+
+  def reset_events_in_flight(events) do
+    for e <- events do
+      e
+      |> PendingLoggerEvent.changeset(%{api_request_started_at: 0})
+      |> Repo.update()
+    end
   end
 end
