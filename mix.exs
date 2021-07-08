@@ -37,7 +37,6 @@ defmodule LogflareLogger.MixProject do
   defp deps do
     [
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
-      {:jason, "~> 1.0"},
       {:bypass, "~> 2.0", only: :test},
       {:typed_struct, ">= 0.0.0"},
       {:bertex, "~> 1.3"},
