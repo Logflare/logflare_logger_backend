@@ -47,7 +47,7 @@ defmodule LogflareLogger.HttpBackend do
   def handle_info(:flush, config), do: flush!(config)
 
   def handle_info(:log_init, config) do
-    Logger.info("#{__MODULE__} v#{Mix.Project.config()[:version]} started.")
+    Logger.info("#{__MODULE__} v#{Application.spec(@app, :vsn)} started.")
 
     {:ok, config}
   end
@@ -60,7 +60,7 @@ defmodule LogflareLogger.HttpBackend do
       if count > 0,
         do:
           Logger.warn(
-            "#{__MODULE__} resetting #{count} log events in flight. If this continues please submit an issue."
+            "#{__MODULE__} v#{Application.spec(@app, :vsn)} resetting #{count} log events in flight. If this continues please submit an issue."
           )
     end
 
