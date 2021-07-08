@@ -19,8 +19,8 @@ defmodule LogflareLogger.HttpBackend do
   @spec init(__MODULE__, keyword) :: {:ok, Config.t()}
   def init(__MODULE__, options \\ []) when is_list(options) do
     schedule_in_flight_check()
-
-    log_init()
+    msg = "#{__MODULE__} v#{Application.spec(@app, :vsn)} started."
+    log_after(:info, msg)
 
     options
     |> configure_merge(%Config{})
@@ -44,24 +44,25 @@ defmodule LogflareLogger.HttpBackend do
     {:ok, config}
   end
 
-  def handle_info(:flush, config), do: flush!(config)
-
-  def handle_info(:log_init, config) do
-    Logger.info("#{__MODULE__} v#{Application.spec(@app, :vsn)} started.")
+  def handle_info({:log_after, level, message}, config) do
+    Logger.log(level, message)
 
     {:ok, config}
   end
+
+  def handle_info(:flush, config), do: flush!(config)
 
   def handle_info(:in_flight_check, config) do
     # If we somehow have events in flight stuck in our Repo, they get reset here to get flushed to Logflare.
     if GenServer.whereis(LogflareLogger.Repo) do
       count = BatchCache.events_in_flight() |> BatchCache.reset_events_in_flight() |> Enum.count()
 
-      if count > 0,
-        do:
-          Logger.warn(
-            "#{__MODULE__} v#{Application.spec(@app, :vsn)} resetting #{count} log events in flight. If this continues please submit an issue."
-          )
+      if count > 0 do
+        msg =
+          "#{__MODULE__} v#{Application.spec(@app, :vsn)} resetting #{count} log events in flight. If this continues please submit an issue."
+
+        log_after(:warn, msg)
+      end
     end
 
     {:ok, config}
@@ -151,11 +152,12 @@ defmodule LogflareLogger.HttpBackend do
   end
 
   defp schedule_in_flight_check() do
-    Process.send_after(self(), :in_flight_check, 5_000)
+    Process.send_after(self(), :in_flight_check, 0)
   end
 
-  defp log_init() do
-    Process.send_after(self(), :log_init, 5_000)
+  defp log_after(level, message, delay \\ 5_000) do
+    # We'd like to see these in Logflare so we delay the log message to make sure Logger and the Logflare backend has been started
+    Process.send_after(self(), {:log_after, level, message}, delay)
   end
 
   # Events
