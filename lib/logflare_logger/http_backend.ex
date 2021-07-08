@@ -143,7 +143,7 @@ defmodule LogflareLogger.HttpBackend do
   end
 
   defp schedule_in_flight_check() do
-    Process.send_after(self(), :in_flight_check)
+    Process.send_after(self(), :in_flight_check, 0)
   end
 
   # Events
