@@ -8,9 +8,10 @@ defmodule Mix.Tasks.LogflareLogger.VerifyConfig do
     IO.puts("You are verifying config for the #{Mix.env()} environment")
     {:ok, _} = Application.ensure_all_started(:logflare_logger_backend)
 
-    api_key = get_env(:api_key)
-    source_id = get_env(:source_id)
-    url = get_env(:url)
+    api_key = get_env(:api_key) || System.get_env("LOGFLARE_API_KEY")
+    source_id = get_env(:source_id) || System.get_env("LOGFLARE_SOURCE_ID")
+    url = get_env(:url) || System.get_env("LOGFLARE_URL")
+
     CLI.throw_on_missing_api_key!(api_key)
     CLI.throw_on_missing_source!(source_id)
     CLI.throw_on_missing_url!(url)
