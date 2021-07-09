@@ -82,7 +82,7 @@ by adding `logflare_logger_backend` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:logflare_logger_backend, "~> 0.8.0"}
+    {:logflare_logger_backend, "~> 0.9.0"}
   ]
 end
 ```
