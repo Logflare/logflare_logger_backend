@@ -37,18 +37,16 @@ defmodule Mix.Tasks.LogflareLogger.VerifyConfig do
       )
 
     case result do
-      {:ok, %{status: 200}} ->
-        IO.puts("Logflare API endpoint responded ok, check your log dashboard!")
+      {:ok, %{status: status}} when status in 200..299 ->
+        IO.puts("Logflare API endpoint responded ok, check your dashboard!")
 
-      {:ok, %{status: 404}} ->
-        IO.puts("HTTP request to Logflare API endpoint returned 404")
-
-      {:ok, %{status: 403}} ->
-        IO.puts("Logflare API endpoint responded with 403: Not Authorized")
+      {:ok, %{status: status, body: body}} ->
+        IO.puts("HTTP request to Logflare API endpoint returned an HTTP status code #{status}.")
+        IO.puts("Response body is: #{body}")
 
       {:error, tesla_env} ->
         IO.puts("Unknown Error")
-        IO.puts(inspect(tesla_env))
+        IO.inspect(tesla_env)
     end
   end
 
