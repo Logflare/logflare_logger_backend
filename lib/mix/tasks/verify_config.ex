@@ -1,7 +1,9 @@
 defmodule Mix.Tasks.LogflareLogger.VerifyConfig do
   alias LogflareLogger.CLI
   use Mix.Task
+
   @app :logflare_logger_backend
+  @default_api_url "https://api.logflare.app"
 
   @impl Mix.Task
   def run(_args \\ []) do
@@ -10,7 +12,7 @@ defmodule Mix.Tasks.LogflareLogger.VerifyConfig do
 
     api_key = get_env(:api_key) || System.get_env("LOGFLARE_API_KEY")
     source_id = get_env(:source_id) || System.get_env("LOGFLARE_SOURCE_ID")
-    url = get_env(:url) || System.get_env("LOGFLARE_URL")
+    url = get_env(:url) || System.get_env("LOGFLARE_URL") || @default_api_url
 
     CLI.throw_on_missing_api_key!(api_key)
     CLI.throw_on_missing_source!(source_id)
