@@ -78,7 +78,7 @@ defmodule LogflareLogger.LogParams do
       end
 
     erldt
-    |> NaiveDateTime.from_erl!({round(milli * 1000), 6})
+    |> NaiveDateTime.from_erl!({milli * 1000, 6})
     |> NaiveDateTime.to_iso8601(:extended)
     |> Kernel.<>("Z")
   end

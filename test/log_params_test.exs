@@ -109,12 +109,12 @@ defmodule LogflareLogger.LogParamsTest do
       {date, time} = :calendar.local_time()
       {hour, minute, second} = time
 
-      utc = %{NaiveDateTime.utc_now() | microsecond: {314_159, 6}}
+      utc = %{NaiveDateTime.utc_now() | microsecond: {314_000, 6}}
       utcstring = NaiveDateTime.to_iso8601(utc, :extended) <> "Z"
       {millis, _} = utc.microsecond
 
       assert utcstring ==
-               LogParams.encode_timestamp({date, {hour, minute, second, millis / 1000}})
+               LogParams.encode_timestamp({date, {hour, minute, second, round(millis / 1000)}})
     end
 
     test "handles report_cb" do
