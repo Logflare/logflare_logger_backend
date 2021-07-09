@@ -22,6 +22,14 @@ config :logflare_logger_backend,
   max_batch_size: 50 # maximum number of events before a log batch is sent to the server
 ```
 
+Alternatively, you can configure these options in your system environment. Prefix the above option names with `LOGFLARE_`. 
+
+```bash
+export LOGFLARE_URL="https://api.logflare.app"
+export LOGFLARE_API_KEY="..."
+export LOGFLARE_SOURCE_ID="..."
+```
+
 ## Usage
 
 After configuring LogflareLogger in `config.exs`, use `Logger.info, Logger.error, ...` functions to send log events to Logflare app.
