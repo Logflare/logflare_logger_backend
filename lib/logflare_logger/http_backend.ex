@@ -50,8 +50,6 @@ defmodule LogflareLogger.HttpBackend do
     {:ok, config}
   end
 
-  def handle_info(:flush, config), do: flush!(config)
-
   def handle_info(:in_flight_check, config) do
     # If we somehow have events in flight stuck in our Repo, they get reset here to get flushed to Logflare.
     if GenServer.whereis(LogflareLogger.Repo) do
@@ -67,6 +65,8 @@ defmodule LogflareLogger.HttpBackend do
 
     {:ok, config}
   end
+
+  def handle_info(:flush, config), do: flush!(config)
 
   def handle_info(_term, config), do: {:ok, config}
 
@@ -89,10 +89,15 @@ defmodule LogflareLogger.HttpBackend do
     # Configuration values are populated according to the following priorities:
     # 1. Dynamically confgiured options with Logger.configure(...)
     # 2. Application environment
-    # 3. Current config
+    # 3. System environment
+    # 4. Current config
+
+    sys_options = System.get_env() |> find_logflare_sys_envs()
+    app_options = Application.get_all_env(@app)
+
     options =
-      @app
-      |> Application.get_all_env()
+      app_options
+      |> Keyword.merge(sys_options)
       |> Keyword.merge(options)
 
     url = Keyword.get(options, :url) || @default_api_url
@@ -165,4 +170,18 @@ defmodule LogflareLogger.HttpBackend do
   @spec log_level_matches?(level, level | nil) :: boolean
   defp log_level_matches?(_lvl, nil), do: true
   defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
+
+  defp find_logflare_sys_envs(envs) do
+    Enum.map(envs, fn {k, v} ->
+      case String.split(k, "LOGFLARE_") do
+        ["", key] ->
+          k = String.downcase(key) |> String.to_atom()
+          {k, v}
+
+        _ ->
+          nil
+      end
+    end)
+    |> Enum.filter(&(!is_nil(&1)))
+  end
 end
