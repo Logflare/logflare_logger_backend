@@ -17,4 +17,13 @@ defmodule LogflareLogger.Utils do
       mfa
     ]
   end
+
+  def find_logflare_sys_envs() do
+    envs = System.get_env()
+
+    for {"LOGFLARE_" <> k, v} <- envs do
+      k = String.downcase(k) |> String.to_atom()
+      {k, v}
+    end
+  end
 end

@@ -8,7 +8,7 @@ defmodule LogflareLogger.HttpBackend do
   @behaviour :gen_event
 
   require Logger
-  alias LogflareLogger.{Formatter, BatchCache, CLI}
+  alias LogflareLogger.{Formatter, BatchCache, CLI, Utils}
   alias LogflareLogger.BackendConfig, as: Config
 
   @type level :: Logger.level()
@@ -92,7 +92,7 @@ defmodule LogflareLogger.HttpBackend do
     # 3. System environment
     # 4. Current config
 
-    sys_options = System.get_env() |> find_logflare_sys_envs()
+    sys_options = Utils.find_logflare_sys_envs()
     app_options = Application.get_all_env(@app)
 
     options =
@@ -170,18 +170,4 @@ defmodule LogflareLogger.HttpBackend do
   @spec log_level_matches?(level, level | nil) :: boolean
   defp log_level_matches?(_lvl, nil), do: true
   defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
-
-  def find_logflare_sys_envs(envs) do
-    Enum.map(envs, fn {k, v} ->
-      case k do
-        "LOGFLARE_" <> key ->
-          k = String.downcase(key) |> String.to_atom()
-          {k, v}
-
-        _ ->
-          nil
-      end
-    end)
-    |> Enum.filter(&(!is_nil(&1)))
-  end
 end
