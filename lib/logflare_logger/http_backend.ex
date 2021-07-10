@@ -171,10 +171,10 @@ defmodule LogflareLogger.HttpBackend do
   defp log_level_matches?(_lvl, nil), do: true
   defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
 
-  defp find_logflare_sys_envs(envs) do
+  def find_logflare_sys_envs(envs) do
     Enum.map(envs, fn {k, v} ->
-      case String.split(k, "LOGFLARE_") do
-        ["", key] ->
+      case k do
+        "LOGFLARE_" <> key ->
           k = String.downcase(key) |> String.to_atom()
           {k, v}
 
