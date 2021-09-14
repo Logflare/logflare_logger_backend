@@ -18,8 +18,9 @@ config :logflare_logger_backend,
   level: :info, # Default LogflareLogger level is :info. Note that log messages are filtered by the :logger application first
   api_key: "...",
   source_id: "...",
-  flush_interval: 1_000, # minimum time in ms before a log batch is sent to the server ",
-  max_batch_size: 50 # maximum number of events before a log batch is sent to the server
+  flush_interval: 1_000, # minimum time in ms before a log batch is sent to the server "
+  max_batch_size: 50, # maximum number of events before a log batch is sent to the server
+  drop: [:drop, :these, :keys] # a list of metadata keys to always drop from the payload
 ```
 
 Alternatively, you can configure these options in your system environment. Prefix the above option names with `LOGFLARE_`. 
