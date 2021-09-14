@@ -29,6 +29,15 @@ defmodule LogflareLogger.Formatter do
     format(level, msg, ts, Map.new(meta))
   end
 
+  def format_event(level, msg, ts, meta, %Config{metadata: [drop: dropkeys]}) when is_list(dropkeys) do
+    meta =
+      meta
+      |> Enum.into(%{})
+      |> Map.drop(dropkeys)
+
+    format(level, msg, ts, meta)
+  end
+
   def format_event(level, msg, ts, meta, %Config{metadata: metakeys}) when is_list(metakeys) do
     keys = Utils.default_metadata_keys() -- metakeys
 
