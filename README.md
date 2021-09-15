@@ -4,23 +4,23 @@ An Elixir Logger backend for [Logflare](https://github.com/Logflare/logflare). S
 
 # Configuration
 
-Get your `api_key` and create up a `source` at [logflare.app](https://logflare.app)
+Get your `api_key` and create a `source` at [logflare.app](https://logflare.app/dashboard)
 
-You will need **source_id** which you can copy from your dashboard.
+You will need a Logflare source **source_id** which you can copy from your dashboard after you create a one.
 
 ```elixir
 config :logger,
-  level: :info, # or other Logger level,
+  level: :info, # or other Logger level
   backends: [LogflareLogger.HttpBackend]
 
 config :logflare_logger_backend,
   url: "https://api.logflare.app", # https://api.logflare.app is configured by default and you can set your own url
   level: :info, # Default LogflareLogger level is :info. Note that log messages are filtered by the :logger application first
-  api_key: "...",
-  source_id: "...",
-  flush_interval: 1_000, # minimum time in ms before a log batch is sent to the server "
-  max_batch_size: 50, # maximum number of events before a log batch is sent to the server
-  drop: [:drop, :these, :keys] # a list of metadata keys to always drop from the payload
+  api_key: "...", # your Logflare API key, found on your dashboard
+  source_id: "...", # the Logflare source UUID, found  on your Logflare dashboard
+  flush_interval: 1_000, # minimum time in ms before a log batch is sent
+  max_batch_size: 50, # maximum number of events before a log batch is sent
+  metadata: :all # optionally you can drop keys if they exist with `metadata: [drop: [:list, :keys, :to, :drop]]`
 ```
 
 Alternatively, you can configure these options in your system environment. Prefix the above option names with `LOGFLARE_`. 
