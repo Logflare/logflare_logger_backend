@@ -1,6 +1,9 @@
 defmodule LogflareLogger.Formatter do
   @moduledoc false
-  alias LogflareLogger.{LogParams, Utils}
+
+  require Logger
+
+  alias LogflareLogger.LogParams
   alias LogflareLogger.BackendConfig, as: Config
 
   def format(level, message, ts, metadata) do
@@ -29,7 +32,8 @@ defmodule LogflareLogger.Formatter do
     format(level, msg, ts, Map.new(meta))
   end
 
-  def format_event(level, msg, ts, meta, %Config{metadata: [drop: dropkeys]}) when is_list(dropkeys) do
+  def format_event(level, msg, ts, meta, %Config{metadata: [drop: dropkeys]})
+      when is_list(dropkeys) do
     meta =
       meta
       |> Enum.into(%{})
@@ -39,14 +43,11 @@ defmodule LogflareLogger.Formatter do
   end
 
   def format_event(level, msg, ts, meta, %Config{metadata: metakeys}) when is_list(metakeys) do
-    keys = Utils.default_metadata_keys() -- metakeys
+    IO.warn(
+      "Your logflare_logger_backend configuration key `metadata` is deprecated. Looks like you're using a list of keywords. Please use `metadata: :all` or `metadata: [drop: [:keys, :to, :drop]]`"
+    )
 
-    meta =
-      meta
-      |> Enum.into(%{})
-      |> Map.drop(keys)
-
-    format(level, msg, ts, meta)
+    format(level, msg, ts, Map.new(meta))
   end
 
   def format_event(_, _, _, _, nil) do
