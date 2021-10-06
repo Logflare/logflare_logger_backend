@@ -87,6 +87,7 @@ defmodule LogflareLogger.LogParams do
     meta
     |> encode_crash_reason()
     |> convert_mfa()
+    |> convert_initial_call()
     |> traverse_convert()
     |> Map.drop(["report_cb", "erl_level"])
   end
@@ -103,6 +104,12 @@ defmodule LogflareLogger.LogParams do
   end
 
   def encode_crash_reason(meta), do: meta
+
+  def convert_initial_call(%{initial_call: {m, f, a}} = meta) when is_integer(a) do
+    %{meta | initial_call: {m, f, "#{a}"}}
+  end
+
+  def convert_initial_call(meta), do: meta
 
   def convert_mfa(%{mfa: {m, f, a}} = meta) when is_integer(a) do
     %{meta | mfa: {m, f, "#{a}"}}
