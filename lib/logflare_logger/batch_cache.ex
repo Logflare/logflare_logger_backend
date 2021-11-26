@@ -94,7 +94,7 @@ defmodule LogflareLogger.BatchCache do
 
   def sort_by_created_asc(pending_events) do
     # etso id is System.monotonic_time
-    Enum.sort_by(pending_events, & &1.id, :asc)
+    Enum.sort_by(pending_events, &(&1.id), &<=/2)
   end
 
   def events_in_flight() do
