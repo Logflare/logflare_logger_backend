@@ -36,7 +36,7 @@ defmodule LogflareLogger.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:typed_struct, "~> 0.2.1"},
+      {:typed_struct, "~> 0.3.0"},
       {:bertex, "~> 1.3"},
       {:etso, "~> 1.1.0"},
       {:logflare_api_client, "~> 0.3.3"},
