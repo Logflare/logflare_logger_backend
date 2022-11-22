@@ -43,7 +43,7 @@ defmodule LogflareLogger.MixProject do
 
       # Test and Dev
       {:placebo, "~> 2.0", only: :test},
-      {:ex_doc, "~> 0.28.5", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.29.1", only: :dev, runtime: false},
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
       {:bypass, "~> 2.0", only: :test}
     ]
