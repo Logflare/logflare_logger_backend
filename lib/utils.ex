@@ -23,6 +23,8 @@ defmodule LogflareLogger.Utils do
 
     for {"LOGFLARE_" <> k, v} <- envs do
       k = String.downcase(k) |> String.to_atom()
+      v = if k == :level, do: String.to_atom(v), else: v
+
       {k, v}
     end
   end
