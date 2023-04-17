@@ -23,7 +23,7 @@ config :logflare_logger_backend,
   metadata: :all # optionally you can drop keys if they exist with `metadata: [drop: [:list, :keys, :to, :drop]]`
 ```
 
-Alternatively, you can configure these options in your system environment. Prefix the above option names with `LOGFLARE_`. 
+Alternatively, you can configure these options in your system environment. Prefix the above option names with `LOGFLARE_`.
 
 ```bash
 export LOGFLARE_URL="https://api.logflare.app"
@@ -91,7 +91,7 @@ by adding `logflare_logger_backend` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:logflare_logger_backend, "~> 0.11.0"}
+    {:logflare_logger_backend, "~> 0.11.1"}
   ]
 end
 ```
