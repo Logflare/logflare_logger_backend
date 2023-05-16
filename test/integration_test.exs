@@ -1,6 +1,6 @@
 defmodule LogflareLogger.IntegrationTest do
   @moduledoc false
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   alias LogflareLogger.{HttpBackend, TestUtils}
   require Logger
 
@@ -16,7 +16,7 @@ defmodule LogflareLogger.IntegrationTest do
     Application.put_env(:logflare_logger_backend, :api_key, @api_key)
     Application.put_env(:logflare_logger_backend, :source_id, @source)
     Application.put_env(:logflare_logger_backend, :level, :info)
-    Application.put_env(:logflare_logger_backend, :flush_interval, 500)
+    Application.put_env(:logflare_logger_backend, :flush_interval, 900)
     Application.put_env(:logflare_logger_backend, :max_batch_size, 100)
 
     Logger.add_backend(@logger_backend)
@@ -84,9 +84,6 @@ defmodule LogflareLogger.IntegrationTest do
 
   @msg "Incoming log from test with all metadata"
   test "correctly handles metadata keys", %{bypass: bypass} do
-    :ok = Logger.configure_backend(@logger_backend, metadata: :all)
-    LogflareLogger.context(test_context: %{some_metric: 7331})
-
     Bypass.expect_once(bypass, "POST", @path, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
 
@@ -119,9 +116,9 @@ defmodule LogflareLogger.IntegrationTest do
       Plug.Conn.resp(conn, 200, "")
     end)
 
-    log_msg = @msg
-
-    for _n <- 1..45, do: Logger.info(log_msg)
+    :ok = Logger.configure_backend(@logger_backend, metadata: :all)
+    LogflareLogger.context(test_context: %{some_metric: 7331})
+    for _n <- 1..45, do: Logger.info(@msg)
 
     Process.sleep(1_000)
   end
