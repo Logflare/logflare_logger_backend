@@ -19,26 +19,32 @@ defmodule LogflareLogger.PendingLoggerEvent do
     |> Map.new()
   end
 
-  defp check_deep_struct(v) when is_map(v) do
-    v
+  defp check_deep_struct(value) when is_map(value) do
+    value
     |> Enum.map(fn {k, v} -> {k, check_deep_struct(v)} end)
     |> Map.new()
   end
 
-  defp check_deep_struct(v) when is_list(v) do
+  defp check_deep_struct(value) when is_list(value) do
     single_type? =
-      v
+      value
       |> Enum.map(&type/1)
       |> Enum.uniq()
       |> then(&(length(&1) == 1))
 
     case single_type? do
-      true -> v
-      false -> Enum.map(v, &inspect(&1))
+      true ->
+        value
+
+      false ->
+        Enum.map(value, fn
+          v when is_binary(v) -> v
+          v -> inspect(v)
+        end)
     end
   end
 
-  defp check_deep_struct(v), do: v
+  defp check_deep_struct(value), do: value
 
   defp type(v) when is_map(v), do: :map
   defp type(v) when is_list(v), do: :list

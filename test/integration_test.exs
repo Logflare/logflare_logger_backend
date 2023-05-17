@@ -12,6 +12,14 @@ defmodule LogflareLogger.IntegrationTest do
 
   setup do
     bypass = Bypass.open()
+
+    url = Application.get_env(:logflare_logger_backend, :url)
+    api_key = Application.get_env(:logflare_logger_backend, :api_key)
+    source_id = Application.get_env(:logflare_logger_backend, :source_id)
+    level = Application.get_env(:logflare_logger_backend, :level)
+    flush_interval = Application.get_env(:logflare_logger_backend, :flush_interval)
+    max_batch_size = Application.get_env(:logflare_logger_backend, :max_batch_size)
+
     Application.put_env(:logflare_logger_backend, :url, "http://127.0.0.1:#{bypass.port}")
     Application.put_env(:logflare_logger_backend, :api_key, @api_key)
     Application.put_env(:logflare_logger_backend, :source_id, @source)
@@ -24,6 +32,12 @@ defmodule LogflareLogger.IntegrationTest do
     on_exit(fn ->
       LogflareLogger.context(test_context: nil)
       Logger.remove_backend(@logger_backend, flush: true)
+      Application.put_env(:logflare_logger_backend, :url, url)
+      Application.put_env(:logflare_logger_backend, :api_key, api_key)
+      Application.put_env(:logflare_logger_backend, :source_id, source_id)
+      Application.put_env(:logflare_logger_backend, :level, level)
+      Application.put_env(:logflare_logger_backend, :flush_interval, flush_interval)
+      Application.put_env(:logflare_logger_backend, :max_batch_size, max_batch_size)
     end)
 
     {:ok, bypass: bypass}
