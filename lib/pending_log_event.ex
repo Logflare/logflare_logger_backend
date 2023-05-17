@@ -39,7 +39,7 @@ defmodule LogflareLogger.PendingLoggerEvent do
       false ->
         Enum.map(value, fn
           v when is_binary(v) -> v
-          v -> inspect(v)
+          v -> Jason.encode!(v)
         end)
     end
   end
