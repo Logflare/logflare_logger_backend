@@ -46,7 +46,6 @@ defmodule LogflareLogger.HttpBackendTest do
     end
 
     test "flushes after batch reaches max_batch_size" do
-      allow(LogflareApiClient.new(any()), return: %Tesla.Client{})
       allow(LogflareApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{}})
 
       {:ok, state} = init_with_default(flush_interval: 60_000)

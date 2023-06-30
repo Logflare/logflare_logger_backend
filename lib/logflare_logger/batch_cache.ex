@@ -14,7 +14,9 @@ defmodule LogflareLogger.BatchCache do
 
   def put(event, config) do
     if GenServer.whereis(Repo) do
-      Repo.insert!(%PendingLoggerEvent{body: event})
+      %PendingLoggerEvent{}
+      |> PendingLoggerEvent.changeset(%{body: event})
+      |> Repo.insert!()
 
       pending_events = pending_events_not_in_flight()
       pending_events_count = Enum.count(pending_events)
@@ -94,7 +96,7 @@ defmodule LogflareLogger.BatchCache do
 
   def sort_by_created_asc(pending_events) do
     # etso id is System.monotonic_time
-    Enum.sort_by(pending_events, &(&1.id), &<=/2)
+    Enum.sort_by(pending_events, & &1.id, &<=/2)
   end
 
   def events_in_flight() do
