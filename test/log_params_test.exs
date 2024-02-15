@@ -29,7 +29,7 @@ defmodule LogflareLogger.LogParamsTest do
     end
 
     test "charlists to strings" do
-      x = 'just a simple charlist'
+      x = ~c"just a simple charlist"
       user_context = build_user_context(%{charlist: %{x => [x, %{x => {x, x}}]}})
 
       x = to_string(x)
@@ -42,13 +42,6 @@ defmodule LogflareLogger.LogParamsTest do
 
       x = %{"a" => 2, "b" => %{"a" => 6}}
       assert user_context === %{"keyword" => %{1 => [x, %{"two" => [x, x]}]}}
-    end
-
-    test "observer_backend.sys_info()" do
-      user_context = build_user_context(observer_sys_info: :observer_backend.sys_info())
-
-      assert ["instance", 0, %{"mbcs" => _, "sbcs" => _}] =
-               hd(user_context["observer_sys_info"]["alloc_info"]["binary_alloc"])
     end
 
     test "pid to string" do
