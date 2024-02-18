@@ -129,7 +129,8 @@ defmodule LogflareLogger.IntegrationTest do
                "source" => @source
              } = body
 
-      assert length(body["batch"]) == 45
+      assert length(body["batch"]) == 45,
+             "#{inspect(body["batch"], pretty: true)} should have 45 entries"
 
       Plug.Conn.resp(conn, 200, "")
     end)

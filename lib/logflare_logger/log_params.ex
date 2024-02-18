@@ -12,7 +12,7 @@ defmodule LogflareLogger.LogParams do
     new(timestamp, level, message, metadata)
   end
 
-  def new(timestamp, level, message, metadata) do
+  defp new(timestamp, level, message, metadata) do
     message = encode_message(message)
     timestamp = encode_timestamp(timestamp)
     metadata = encode_metadata(metadata)
@@ -41,7 +41,7 @@ defmodule LogflareLogger.LogParams do
     end
   end
 
-  def enrich(context, :vm) do
+  defp enrich(context, :vm) do
     Map.merge(context, %{"vm" => %{"node" => "#{Node.self()}"}})
   end
 
@@ -68,7 +68,7 @@ defmodule LogflareLogger.LogParams do
   end
 
   def encode_timestamp({date, {hour, minute, second, milli}}) when is_integer(milli) do
-    erldt =
+    {date, {hour, minute, second}} =
       {date, {hour, minute, second}}
       |> :calendar.local_time_to_universal_time_dst()
       |> case do
@@ -77,10 +77,7 @@ defmodule LogflareLogger.LogParams do
         [_, dt_utc] -> dt_utc
       end
 
-    erldt
-    |> NaiveDateTime.from_erl!({milli * 1000, 6})
-    |> NaiveDateTime.to_iso8601(:extended)
-    |> Kernel.<>("Z")
+    encode_timestamp({date, {hour, minute, second, {milli * 1000, 6}}})
   end
 
   def encode_metadata(meta) when is_list(meta) when is_map(meta) do
@@ -105,18 +102,22 @@ defmodule LogflareLogger.LogParams do
 
   def encode_crash_reason(meta), do: meta
 
-  def convert_initial_call(%{initial_call: {m, f, a}} = meta) when is_integer(a) do
+  defp convert_initial_call(%{initial_call: {m, f, a}} = meta) when is_integer(a) do
     %{meta | initial_call: {m, f, "#{a}"}}
   end
 
-  def convert_initial_call(meta), do: meta
+  defp convert_initial_call(meta), do: meta
 
-  def convert_mfa(%{mfa: {m, f, a}} = meta) when is_integer(a) do
+  defp convert_mfa(%{mfa: {m, f, a}} = meta) when is_integer(a) do
     %{meta | mfa: {m, f, "#{a}"}}
   end
 
-  def convert_mfa(meta), do: meta
+  defp convert_mfa(meta), do: meta
 
+  @doc """
+  All atoms are converted to strings for Logflare server to be able
+  to safely convert binary to terms using :erlang.binary_to_term(binary, [:safe])
+  """
   def traverse_convert(%NaiveDateTime{} = v), do: to_string(v)
   def traverse_convert(%DateTime{} = v), do: to_string(v)
 
@@ -149,10 +150,6 @@ defmodule LogflareLogger.LogParams do
     x |> Tuple.to_list() |> traverse_convert()
   end
 
-  @doc """
-  All atoms are converted to strings for Logflare server to be able
-  to safely convert binary to terms using :erlang.binary_to_term(binary, [:safe])
-  """
   def traverse_convert(x) when is_boolean(x), do: x
 
   def traverse_convert(nil), do: nil
