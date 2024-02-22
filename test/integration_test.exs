@@ -1,6 +1,8 @@
 defmodule LogflareLogger.IntegrationTest do
   @moduledoc false
   use ExUnit.Case, async: false
+  import ExUnit.CaptureLog
+
   alias LogflareLogger.{HttpBackend, TestUtils}
   require Logger
 
@@ -77,17 +79,19 @@ defmodule LogflareLogger.IntegrationTest do
       Plug.Conn.resp(conn, 200, "")
     end)
 
-    for n <- 1..10, do: Logger.info(log_msg <> " ##{n}")
+    capture_log(fn ->
+      for n <- 1..10, do: Logger.info(log_msg <> " ##{n}")
 
-    Process.sleep(1_000)
+      Process.sleep(1_000)
 
-    for n <- 1..10, do: Logger.error(log_msg <> " ##{20 + n}")
+      for n <- 1..10, do: Logger.error(log_msg <> " ##{20 + n}")
 
-    Process.sleep(1_000)
+      Process.sleep(1_000)
 
-    for n <- 1..10, do: Logger.debug(log_msg <> " ##{30 + n}")
+      for n <- 1..10, do: Logger.debug(log_msg <> " ##{30 + n}")
 
-    Process.sleep(1_000)
+      Process.sleep(1_000)
+    end)
   end
 
   test "doesn't POST log events with a lower level", %{bypass: _bypass} do
@@ -110,7 +114,7 @@ defmodule LogflareLogger.IntegrationTest do
                    "metadata" => %{
                      "level" => "info",
                      "context" => %{
-                       "pid" => pidbinary,
+                       "pid" => _pidbinary,
                        "module" => _,
                        "file" => _,
                        "line" => _,
