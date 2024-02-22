@@ -6,7 +6,9 @@ defmodule LogflareLogger.Formatter do
   alias LogflareLogger.LogParams
   alias LogflareLogger.BackendConfig, as: Config
 
-  def format(level, message, ts, metadata) do
+  defp format(root, level, message, ts, metadata) do
+    root = for {k, v} <- root, into: %{}, do: {Atom.to_string(k), v}
+
     try do
       LogParams.encode(ts, level, message, metadata)
     rescue
@@ -26,31 +28,31 @@ defmodule LogflareLogger.Formatter do
           }
         }
     end
+    |> Map.merge(root)
   end
 
-  def format_event(level, msg, ts, meta, %Config{metadata: :all}) do
-    format(level, msg, ts, Map.new(meta))
-  end
+  def format_event(level, msg, ts, meta, %Config{} = config) do
+    meta = Map.new(meta)
+    {root, meta} = extract_root(meta, config.toplevel)
+    meta = filter_metadata(meta, config.metadata)
 
-  def format_event(level, msg, ts, meta, %Config{metadata: [drop: dropkeys]})
-      when is_list(dropkeys) do
-    meta =
-      meta
-      |> Enum.into(%{})
-      |> Map.drop(dropkeys)
-
-    format(level, msg, ts, meta)
-  end
-
-  def format_event(level, msg, ts, meta, %Config{metadata: metakeys}) when is_list(metakeys) do
-    IO.warn(
-      "Your logflare_logger_backend configuration key `metadata` is deprecated. Looks like you're using a list of keywords. Please use `metadata: :all` or `metadata: [drop: [:keys, :to, :drop]]`"
-    )
-
-    format(level, msg, ts, Map.new(meta))
+    format(root, level, msg, ts, meta)
   end
 
   def format_event(_, _, _, _, nil) do
     raise("LogflareLogger is not configured!")
   end
+
+  defp filter_metadata(meta, :all), do: meta
+  defp filter_metadata(meta, drop: keys), do: Map.drop(meta, keys)
+
+  defp filter_metadata(meta, metakeys) when is_list(metakeys) do
+    IO.warn(
+      "Your logflare_logger_backend configuration key `metadata` is deprecated. Looks like you're using a list of keywords. Please use `metadata: :all` or `metadata: [drop: [:keys, :to, :drop]]`"
+    )
+
+    meta
+  end
+
+  defp extract_root(meta, keys), do: Map.split(meta, keys)
 end

@@ -1,5 +1,8 @@
-ExUnit.configure(seed: 1337)
+ExUnit.configure(
+  seed: 1337,
+  exclude: [integration: true]
+)
+
 ExUnit.start()
-ExUnit.configure(exclude: [integration: true])
 
 Application.ensure_all_started(:bypass)
