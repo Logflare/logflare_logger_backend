@@ -42,5 +42,28 @@ defmodule LogflareLogger.PendingLoggerEventTest do
 
       assert changeset.changes.body == body
     end
+
+    test "unencodable types are converted via inspect fallback" do
+      port = Port.open({:spawn, "cat"}, [:binary])
+      Port.close(port)
+
+      unencodable_values = [
+        {port, "#Port<"},
+        {make_ref(), "#Reference<"},
+        {self(), "#PID<"}
+      ]
+
+      for {value, expected_prefix} <- unencodable_values do
+        body = %{"data" => ["string", value], "value" => value, "int" => 123.1}
+        changeset = PendingLoggerEvent.changeset(%PendingLoggerEvent{}, %{body: body})
+
+        [first, second] = changeset.changes.body["data"]
+
+        assert first == "string"
+        assert String.starts_with?(second, expected_prefix)
+        assert changeset.changes.body["value"] =~ expected_prefix
+        assert changeset.changes.body["int"] == 123.1
+      end
+    end
   end
 end

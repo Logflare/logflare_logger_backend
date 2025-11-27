@@ -37,14 +37,29 @@ defmodule LogflareLogger.PendingLoggerEvent do
         value
 
       false ->
-        Enum.map(value, fn
-          v when is_binary(v) -> v
-          v -> Jason.encode!(v)
-        end)
+        Enum.map(value, &safe_encode(&1, :transform))
     end
   end
 
-  defp check_deep_struct(value), do: value
+  defp check_deep_struct(value), do: safe_encode(value, :preserve)
+
+  defp safe_encode(v, _) when is_binary(v), do: v
+
+  defp safe_encode(v, :preserve) do
+    case Jason.encode(v) do
+      {:ok, _} -> v
+      {:error, _} -> inspect(v)
+    end
+  end
+
+  defp safe_encode(v, _) do
+    case Jason.encode(v) do
+      {:ok, encoded} -> encoded
+      {:error, _} -> inspect(v)
+    end
+  end
+
+  defp safe_encode(v, _), do: v
 
   defp type(v) when is_map(v), do: :map
   defp type(v) when is_list(v), do: :list
