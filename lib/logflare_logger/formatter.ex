@@ -43,7 +43,7 @@ defmodule LogflareLogger.Formatter do
   end
 
   def format_event(level, msg, ts, meta, %Config{metadata: metakeys}) when is_list(metakeys) do
-    IO.warn(
+    Logger.warning(
       "Your logflare_logger_backend configuration key `metadata` is deprecated. Looks like you're using a list of keywords. Please use `metadata: :all` or `metadata: [drop: [:keys, :to, :drop]]`"
     )
 

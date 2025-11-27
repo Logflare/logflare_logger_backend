@@ -9,6 +9,8 @@ defmodule LogflareLogger.BatchCache do
   alias LogflareLogger.PendingLoggerEvent
   import Ecto.Query
 
+  require Logger
+
   # batch limit prevents runaway memory usage if API is unresponsive
   @batch_limit 10_000
 
@@ -59,7 +61,7 @@ defmodule LogflareLogger.BatchCache do
         |> case do
           {:ok, %Tesla.Env{status: status, body: body}} ->
             unless status in 200..299 do
-              IO.warn(
+              Logger.warning(
                 "Logflare API warning: HTTP response status is #{status}. Response body is: #{inspect(body)}"
               )
             end
@@ -69,7 +71,7 @@ defmodule LogflareLogger.BatchCache do
             end
 
           {:error, reason} ->
-            IO.warn("Logflare API error: #{inspect(reason)}")
+            Logger.warning("Logflare API error: #{inspect(reason)}")
 
             reset_events_in_flight(ples)
 

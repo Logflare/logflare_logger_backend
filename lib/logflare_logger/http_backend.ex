@@ -169,5 +169,10 @@ defmodule LogflareLogger.HttpBackend do
 
   @spec log_level_matches?(level, level | nil) :: boolean
   defp log_level_matches?(_lvl, nil), do: true
-  defp log_level_matches?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
+
+  defp log_level_matches?(lvl, min),
+    do: Logger.compare_levels(normalize_level(lvl), normalize_level(min)) != :lt
+
+  defp normalize_level(:warn), do: :warning
+  defp normalize_level(level), do: level
 end
