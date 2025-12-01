@@ -65,5 +65,24 @@ defmodule LogflareLogger.PendingLoggerEventTest do
         assert changeset.changes.body["int"] == 123.1
       end
     end
+
+    test "complex nested structures are stringified to avoid BigQuery errors" do
+      body = %{
+        "req_headers" => [["accept", "*/*"], ["content-type", "json"]],
+        "response" => {:ok, "success"},
+        "results" => [{:ok, "first"}, {:error, "second"}],
+        "timestamps" => [[~D[2024-01-01], ~T[12:00:00]]],
+        "three_levels" => [[["deep"]]],
+        "four_levels" => [[[["nested"]]], [nil]]
+      }
+
+      for {k, v} <- body do
+        changeset =
+          PendingLoggerEvent.changeset(%PendingLoggerEvent{}, %{body: Map.new([{k, v}])})
+
+        result = changeset.changes.body
+        assert Map.get(result, k) |> is_binary(), "should be stringified: #{k}"
+      end
+    end
   end
 end

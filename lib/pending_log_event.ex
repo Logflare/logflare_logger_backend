@@ -19,25 +19,41 @@ defmodule LogflareLogger.PendingLoggerEvent do
     |> Map.new()
   end
 
+  defp check_deep_struct(%Date{} = value), do: Date.to_iso8601(value)
+  defp check_deep_struct(%DateTime{} = value), do: DateTime.to_iso8601(value)
+  defp check_deep_struct(%Time{} = value), do: Time.to_iso8601(value)
+  defp check_deep_struct(%NaiveDateTime{} = value), do: NaiveDateTime.to_iso8601(value)
+  defp check_deep_struct(value) when is_struct(value), do: safe_encode(value, :transform)
+
   defp check_deep_struct(value) when is_map(value) do
     value
     |> Enum.map(fn {k, v} -> {k, check_deep_struct(v)} end)
     |> Map.new()
   end
 
-  defp check_deep_struct(value) when is_list(value) do
-    single_type? =
-      value
-      |> Enum.map(&type/1)
-      |> Enum.uniq()
-      |> then(&(length(&1) == 1))
+  defp check_deep_struct([]), do: []
 
-    case single_type? do
-      true ->
+  defp check_deep_struct(value) when is_list(value) do
+    has_nested_lists? = contains_nested_lists?(value)
+    types = value |> Enum.map(&type/1) |> Enum.uniq()
+    single_type? = length(types) == 1
+    first_type = if single_type?, do: List.first(types), else: nil
+
+    cond do
+      has_nested_lists? ->
+        safe_encode(value, :transform)
+
+      not single_type? ->
+        Enum.map(value, &safe_encode(&1, :transform))
+
+      is_primitive_type?(first_type) ->
         value
 
-      false ->
-        Enum.map(value, &safe_encode(&1, :transform))
+      first_type == :map ->
+        Enum.map(value, &check_deep_struct/1)
+
+      true ->
+        safe_encode(value, :transform)
     end
   end
 
@@ -52,14 +68,12 @@ defmodule LogflareLogger.PendingLoggerEvent do
     end
   end
 
-  defp safe_encode(v, _) do
+  defp safe_encode(v, :transform) do
     case Jason.encode(v) do
       {:ok, encoded} -> encoded
       {:error, _} -> inspect(v)
     end
   end
-
-  defp safe_encode(v, _), do: v
 
   defp type(v) when is_map(v), do: :map
   defp type(v) when is_list(v), do: :list
@@ -69,4 +83,13 @@ defmodule LogflareLogger.PendingLoggerEvent do
   defp type(v) when is_binary(v), do: :binary
   defp type(v) when is_boolean(v), do: :boolean
   defp type(_), do: :other
+
+  defp is_primitive_type?(type) when type in [:binary, :integer, :float, :number, :boolean],
+    do: true
+
+  defp is_primitive_type?(_), do: false
+
+  defp contains_nested_lists?(list) when is_list(list) do
+    Enum.any?(list, &is_list/1)
+  end
 end

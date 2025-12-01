@@ -46,7 +46,7 @@ defmodule LogflareLogger.IntegrationTest do
   end
 
   test "logger backend sends a POST request", %{bypass: bypass} do
-    :ok = Logger.configure_backend(@logger_backend, metadata: [])
+    :ok = Logger.configure_backend(@logger_backend, metadata: :all)
     log_msg = "Incoming log from test"
     LogflareLogger.context(test_context: %{some_metric: 1337})
 
