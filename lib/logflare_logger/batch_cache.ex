@@ -29,8 +29,12 @@ defmodule LogflareLogger.BatchCache do
         |> Enum.each(&Repo.delete/1)
       end
 
-      if pending_events_count >= config.batch_max_size,
-        do: flush(config)
+      events = pending_events |> Enum.map(& &1.body)
+      events_count = Enum.count(events)
+
+      if events_count >= config.batch_max_size do
+        flush(config)
+      end
 
       {:ok, :insert_successful}
     else
@@ -43,7 +47,7 @@ defmodule LogflareLogger.BatchCache do
 
     pending_events = pending_events_not_in_flight()
 
-    if !Enum.empty?(pending_events) && events_in_flight() == [] do
+    if not Enum.empty?(pending_events) do
       ples =
         pending_events
         |> Enum.map(fn ple ->
