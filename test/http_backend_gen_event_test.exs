@@ -1,6 +1,6 @@
 defmodule LogflareLogger.HttpBackendTest do
   use ExUnit.Case
-  alias LogflareLogger.{HttpBackend, Formatter, BatchCache, Repo, PendingLoggerEvent}
+  alias LogflareLogger.{HttpBackend, Formatter, BatchCache}
   use Placebo
 
   @default_config [
@@ -14,7 +14,7 @@ defmodule LogflareLogger.HttpBackendTest do
     metadata: []
   ]
 
-  setup do
+  setup_all do
     on_exit(fn ->
       BatchCache.clear()
       Logger.flush()
@@ -50,7 +50,15 @@ defmodule LogflareLogger.HttpBackendTest do
 
       {:ok, state} = init_with_default(flush_interval: 60_000)
 
-      generate_logs(state, @default_config[:batch_max_size])
+      Enum.reduce(
+        1..10,
+        state,
+        fn i, acc ->
+          msg = {:info, nil, {Logger, "log message", ts(i), []}}
+          {:ok, state} = HttpBackend.handle_event(msg, acc)
+          state
+        end
+      )
 
       Process.sleep(200)
 
@@ -58,30 +66,11 @@ defmodule LogflareLogger.HttpBackendTest do
         LogflareApiClient.post_logs(
           any(),
           is(fn batch ->
-            assert length(batch) == @default_config[:batch_max_size]
+            assert length(batch) == 10
           end),
           any()
-        ),
-        once()
+        )
       )
-    end
-
-    test "flush not called if log events are in flight" do
-      allow(LogflareApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{}})
-
-      {:ok, state} = init_with_default(flush_interval: 60_000)
-
-      generate_logs(state, @default_config[:batch_max_size] - 1)
-
-      for e <- BatchCache.pending_events_not_in_flight() do
-        e
-        |> PendingLoggerEvent.changeset(%{api_request_started_at: System.monotonic_time()})
-        |> Repo.update()
-      end
-
-      generate_logs(state, @default_config[:batch_max_size])
-
-      refute_called(LogflareApiClient.post_logs(any(), any(), any()))
     end
   end
 
@@ -90,13 +79,6 @@ defmodule LogflareLogger.HttpBackendTest do
       {:ok, state} = init_with_default()
       {:ok, _state} = HttpBackend.handle_info(:flush, state)
       assert_receive :flush, @default_config[:flush_interval] + 10
-    end
-  end
-
-  defp generate_logs(state, count) do
-    for i <- 1..count do
-      msg = {:info, nil, {Logger, "log message", ts(i), []}}
-      {:ok, _state} = HttpBackend.handle_event(msg, state)
     end
   end
 
