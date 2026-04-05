@@ -57,7 +57,7 @@ defmodule LogflareLogger.PendingLoggerEvent do
   defp safe_encode(v, _) when is_binary(v), do: v
 
   defp safe_encode(v, :preserve) do
-    case Jason.encode(v) do
+    case Jason.encode_to_iodata(v) do
       {:ok, _} -> v
       {:error, _} -> inspect(v)
     end
