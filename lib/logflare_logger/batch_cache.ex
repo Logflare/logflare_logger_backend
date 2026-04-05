@@ -54,7 +54,6 @@ defmodule LogflareLogger.BatchCache do
           ple
         end)
 
-      flushed_count = length(ples)
       caller = self()
 
       Task.start(fn ->
@@ -82,7 +81,7 @@ defmodule LogflareLogger.BatchCache do
         end
       end)
 
-      {:ok, flushed_count}
+      {:ok, length(ples)}
     else
       {:ok, 0}
     end
