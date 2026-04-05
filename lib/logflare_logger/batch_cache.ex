@@ -14,27 +14,11 @@ defmodule LogflareLogger.BatchCache do
   # batch limit prevents runaway memory usage if API is unresponsive
   @batch_limit 10_000
 
-  def put(event, config) do
+  def put(event, _config) do
     if GenServer.whereis(Repo) do
       %PendingLoggerEvent{}
       |> PendingLoggerEvent.changeset(%{body: event})
       |> Repo.insert!()
-
-      pending_events = pending_events_not_in_flight()
-      pending_events_count = Enum.count(pending_events)
-
-      if pending_events_count > @batch_limit do
-        pending_events
-        |> Enum.take(pending_events_count - @batch_limit)
-        |> Enum.each(&Repo.delete/1)
-      end
-
-      events = pending_events |> Enum.map(& &1.body)
-      events_count = Enum.count(events)
-
-      if events_count >= config.batch_max_size do
-        flush(config)
-      end
 
       {:ok, :insert_successful}
     else
@@ -46,6 +30,17 @@ defmodule LogflareLogger.BatchCache do
     api_request_started_at = System.monotonic_time()
 
     pending_events = pending_events_not_in_flight()
+    pending_count = length(pending_events)
+
+    pending_events =
+      if pending_count > @batch_limit do
+        excess = pending_count - @batch_limit
+        {to_drop, to_keep} = Enum.split(pending_events, excess)
+        Enum.each(to_drop, &Repo.delete/1)
+        to_keep
+      else
+        pending_events
+      end
 
     if not Enum.empty?(pending_events) do
       ples =
@@ -58,6 +53,9 @@ defmodule LogflareLogger.BatchCache do
 
           ple
         end)
+
+      flushed_count = length(ples)
+      caller = self()
 
       Task.start(fn ->
         ples
@@ -78,12 +76,15 @@ defmodule LogflareLogger.BatchCache do
             Logger.warning("Logflare API error: #{inspect(reason)}")
 
             reset_events_in_flight(ples)
+            :gen_event.notify(caller, :flush_failed)
 
             :noop
         end
       end)
+
+      {:ok, flushed_count}
     else
-      :noop
+      {:ok, 0}
     end
   end
 

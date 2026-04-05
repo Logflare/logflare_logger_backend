@@ -18,5 +18,6 @@ defmodule LogflareLogger.BackendConfig do
     field :batch_max_size, non_neg_integer, default: @default_batch_size
     field :batch_size, non_neg_integer, default: 0
     field :flush_interval, non_neg_integer, default: @default_flush_interval
+    field :pending_count, non_neg_integer, default: 0
   end
 end

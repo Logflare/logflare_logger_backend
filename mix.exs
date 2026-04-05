@@ -25,7 +25,7 @@ defmodule LogflareLogger.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :tools],
       mod: {LogflareLogger.Application, []}
     ]
   end
@@ -45,7 +45,8 @@ defmodule LogflareLogger.MixProject do
       {:placebo, "~> 2.0", only: :test},
       {:ex_doc, "~> 0.29.4", only: :dev, runtime: false},
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
-      {:bypass, "~> 2.0", only: :test}
+      {:bypass, "~> 2.0", only: [:test, :dev]},
+      {:benchee, "~> 1.0", only: :dev}
     ]
   end
 

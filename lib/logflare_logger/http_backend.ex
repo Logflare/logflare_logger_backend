@@ -28,6 +28,11 @@ defmodule LogflareLogger.HttpBackend do
   end
 
   @spec handle_event(log_msg, Config.t()) :: {:ok, Config.t()}
+  def handle_event(:flush_failed, %Config{} = config) do
+    pending_count = BatchCache.pending_events_not_in_flight() |> length()
+    {:ok, %{config | pending_count: pending_count}}
+  end
+
   def handle_event(:flush, config), do: flush!(config)
 
   def handle_event({_, gl, _}, config) when node(gl) != node() do
@@ -35,11 +40,28 @@ defmodule LogflareLogger.HttpBackend do
   end
 
   def handle_event({level, _gl, {Logger, msg, datetime, metadata}}, %Config{} = config) do
-    if log_level_matches?(level, config.level) do
-      level
-      |> Formatter.format_event(msg, datetime, metadata, config)
-      |> BatchCache.put(config)
-    end
+    config =
+      if log_level_matches?(level, config.level) do
+        level
+        |> Formatter.format_event(msg, datetime, metadata, config)
+        |> BatchCache.put(config)
+        |> case do
+          {:ok, :insert_successful} ->
+            pending_count = config.pending_count + 1
+
+            if pending_count >= config.batch_max_size do
+              {_, config} = flush!(config)
+              config
+            else
+              %{config | pending_count: pending_count}
+            end
+
+          {:error, _} ->
+            config
+        end
+      else
+        config
+      end
 
     {:ok, config}
   end
@@ -52,16 +74,22 @@ defmodule LogflareLogger.HttpBackend do
 
   def handle_info(:in_flight_check, config) do
     # If we somehow have events in flight stuck in our Repo, they get reset here to get flushed to Logflare.
-    if GenServer.whereis(LogflareLogger.Repo) do
-      count = BatchCache.events_in_flight() |> BatchCache.reset_events_in_flight() |> Enum.count()
+    config =
+      if GenServer.whereis(LogflareLogger.Repo) do
+        count = BatchCache.events_in_flight() |> BatchCache.reset_events_in_flight() |> Enum.count()
 
-      if count > 0 do
-        msg =
-          "#{__MODULE__} v#{Application.spec(@app, :vsn)} resetting #{count} log events in flight. If this continues please submit an issue."
+        if count > 0 do
+          msg =
+            "#{__MODULE__} v#{Application.spec(@app, :vsn)} resetting #{count} log events in flight. If this continues please submit an issue."
 
-        log_after(:warning, msg)
+          log_after(:warning, msg)
+          %{config | pending_count: config.pending_count + count}
+        else
+          config
+        end
+      else
+        config
       end
-    end
 
     {:ok, config}
   end
@@ -126,7 +154,8 @@ defmodule LogflareLogger.HttpBackend do
           metadata: metadata,
           batch_size: config.batch_size,
           batch_max_size: batch_max_size,
-          flush_interval: flush_interval
+          flush_interval: flush_interval,
+          pending_count: config.pending_count
         }
       )
 
@@ -143,10 +172,17 @@ defmodule LogflareLogger.HttpBackend do
 
   @spec flush!(Config.t()) :: {:ok, Config.t()}
   defp flush!(%Config{} = config) do
-    if GenServer.whereis(LogflareLogger.Repo) do
-      BatchCache.flush(config)
-    end
+    flushed_count =
+      if GenServer.whereis(LogflareLogger.Repo) do
+        case BatchCache.flush(config) do
+          {:ok, count} -> count
+          _ -> 0
+        end
+      else
+        0
+      end
 
+    config = %{config | pending_count: max(config.pending_count - flushed_count, 0)}
     schedule_flush(config)
   end
 
