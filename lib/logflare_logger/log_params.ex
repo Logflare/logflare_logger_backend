@@ -125,9 +125,7 @@ defmodule LogflareLogger.LogParams do
   end
 
   def traverse_convert(data) when is_map(data) do
-    for {k, v} <- data, into: Map.new() do
-      {traverse_convert(k), traverse_convert(v)}
-    end
+    Map.new(data, fn {k, v} -> {traverse_convert(k), traverse_convert(v)} end)
   end
 
   def traverse_convert(xs) when is_list(xs) do
