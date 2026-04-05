@@ -4,12 +4,11 @@ defmodule LogflareLogger.PendingLoggerEvent do
 
   schema "logger_events" do
     field :body, :map
-    field :api_request_started_at, :integer, default: 0
   end
 
   def changeset(struct, params) do
     struct
-    |> cast(params, [:body, :api_request_started_at])
+    |> cast(params, [:body])
     |> update_change(:body, &fix_body/1)
   end
 

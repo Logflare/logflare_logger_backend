@@ -2,12 +2,16 @@ defmodule LogflareLogger.BatchCache do
   @moduledoc """
   Caches the batch, dispatches API post request if the batch is larger than configured max batch size or flush is called.
 
-  Doesn't error or drop the message if the API is unresponsive, holds them
+  Doesn't error or drop the message if the API is unresponsive, holds them.
+
+  Uses two separate Etso tables:
+  - PendingLoggerEvent: events waiting to be sent
+  - InFlightLoggerEvent: events currently being sent to the API
   """
 
   alias LogflareLogger.Repo
   alias LogflareLogger.PendingLoggerEvent
-  import Ecto.Query
+  alias LogflareLogger.InFlightLoggerEvent
 
   require Logger
 
@@ -20,19 +24,15 @@ defmodule LogflareLogger.BatchCache do
       |> PendingLoggerEvent.changeset(%{body: event})
       |> Repo.insert!()
 
-      pending_events = pending_events_not_in_flight()
-      pending_events_count = Enum.count(pending_events)
+      pending_count = ets_size(PendingLoggerEvent)
 
-      if pending_events_count > @batch_limit do
-        pending_events
-        |> Enum.take(pending_events_count - @batch_limit)
+      if pending_count > @batch_limit do
+        pending_events_asc()
+        |> Enum.take(pending_count - @batch_limit)
         |> Enum.each(&Repo.delete/1)
       end
 
-      events = pending_events |> Enum.map(& &1.body)
-      events_count = Enum.count(events)
-
-      if events_count >= config.batch_max_size do
+      if pending_count >= config.batch_max_size do
         flush(config)
       end
 
@@ -43,24 +43,22 @@ defmodule LogflareLogger.BatchCache do
   end
 
   def flush(config) do
-    api_request_started_at = System.monotonic_time()
-
-    pending_events = pending_events_not_in_flight()
+    pending_events = pending_events_asc()
 
     if not Enum.empty?(pending_events) do
-      ples =
-        pending_events
-        |> Enum.map(fn ple ->
-          {:ok, ple} =
-            ple
-            |> PendingLoggerEvent.changeset(%{api_request_started_at: api_request_started_at})
-            |> Repo.update()
+      in_flight =
+        Enum.map(pending_events, fn ple ->
+          {:ok, ife} =
+            %InFlightLoggerEvent{}
+            |> InFlightLoggerEvent.changeset(%{body: ple.body})
+            |> Repo.insert()
 
-          ple
+          Repo.delete!(ple)
+          ife
         end)
 
       Task.start(fn ->
-        ples
+        in_flight
         |> post_logs(config)
         |> case do
           {:ok, %Tesla.Env{status: status, body: body}} ->
@@ -70,14 +68,14 @@ defmodule LogflareLogger.BatchCache do
               )
             end
 
-            for ple <- ples do
-              Repo.delete(ple)
+            for ife <- in_flight do
+              Repo.delete(ife)
             end
 
           {:error, reason} ->
             Logger.warning("Logflare API error: #{inspect(reason)}")
 
-            reset_events_in_flight(ples)
+            reset_events_in_flight(in_flight)
 
             :noop
         end
@@ -88,7 +86,8 @@ defmodule LogflareLogger.BatchCache do
   end
 
   def clear do
-    Repo.all(PendingLoggerEvent) |> Enum.map(&Repo.delete(&1))
+    Repo.all(PendingLoggerEvent) |> Enum.each(&Repo.delete/1)
+    Repo.all(InFlightLoggerEvent) |> Enum.each(&Repo.delete/1)
   end
 
   def post_logs(events, %{api_client: api_client, source_id: source_id}) do
@@ -96,30 +95,35 @@ defmodule LogflareLogger.BatchCache do
     LogflareApiClient.post_logs(api_client, events, source_id)
   end
 
-  def sort_by_created_asc(pending_events) do
-    # etso id is System.monotonic_time
-    Enum.sort_by(pending_events, & &1.id, &<=/2)
-  end
-
   def events_in_flight() do
-    from(PendingLoggerEvent)
-    |> where([le], le.api_request_started_at != 0)
-    |> Repo.all()
-    |> sort_by_created_asc()
-  end
-
-  def pending_events_not_in_flight() do
-    from(PendingLoggerEvent)
-    |> where([le], le.api_request_started_at == 0)
-    |> Repo.all()
+    Repo.all(InFlightLoggerEvent)
     |> sort_by_created_asc()
   end
 
   def reset_events_in_flight(events) do
     for e <- events do
-      e
-      |> PendingLoggerEvent.changeset(%{api_request_started_at: 0})
-      |> Repo.update()
+      {:ok, ple} =
+        %PendingLoggerEvent{}
+        |> PendingLoggerEvent.changeset(%{body: e.body})
+        |> Repo.insert()
+
+      Repo.delete(e)
+      ple
     end
+  end
+
+  defp pending_events_asc do
+    Repo.all(PendingLoggerEvent)
+    |> sort_by_created_asc()
+  end
+
+  defp sort_by_created_asc(events) do
+    # etso id is System.monotonic_time
+    Enum.sort_by(events, & &1.id, &<=/2)
+  end
+
+  defp ets_size(schema) do
+    {:ok, table} = Etso.Adapter.TableRegistry.get_table(Repo, schema)
+    :ets.info(table, :size)
   end
 end
