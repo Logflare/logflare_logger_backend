@@ -60,15 +60,28 @@ defmodule LogflareLogger.LogParams do
     encode_timestamp({date, {hour, minute, second, 0}})
   end
 
-  def encode_timestamp({date, {hour, minute, second, {_micro, 6} = fractions_with_precision}}) do
-    {date, {hour, minute, second}}
-    |> NaiveDateTime.from_erl!(fractions_with_precision)
-    |> NaiveDateTime.to_iso8601(:extended)
-    |> Kernel.<>("Z")
+  def encode_timestamp({{year, month, day}, {hour, minute, second, {micro, 6}}}) do
+    [
+      Integer.to_string(year),
+      ?-,
+      pad2(month),
+      ?-,
+      pad2(day),
+      ?T,
+      pad2(hour),
+      ?:,
+      pad2(minute),
+      ?:,
+      pad2(second),
+      ?.,
+      pad6(micro),
+      ?Z
+    ]
+    |> IO.iodata_to_binary()
   end
 
   def encode_timestamp({date, {hour, minute, second, milli}}) when is_integer(milli) do
-    erldt =
+    {utc_date, {uh, um, us}} =
       {date, {hour, minute, second}}
       |> :calendar.local_time_to_universal_time_dst()
       |> case do
@@ -77,11 +90,18 @@ defmodule LogflareLogger.LogParams do
         [_, dt_utc] -> dt_utc
       end
 
-    erldt
-    |> NaiveDateTime.from_erl!({milli * 1000, 6})
-    |> NaiveDateTime.to_iso8601(:extended)
-    |> Kernel.<>("Z")
+    encode_timestamp({utc_date, {uh, um, us, {milli * 1000, 6}}})
   end
+
+  defp pad2(int) when int < 10, do: [?0, Integer.to_string(int)]
+  defp pad2(int), do: Integer.to_string(int)
+
+  defp pad6(int) when int < 10, do: [~c"00000", Integer.to_string(int)]
+  defp pad6(int) when int < 100, do: [~c"0000", Integer.to_string(int)]
+  defp pad6(int) when int < 1_000, do: [~c"000", Integer.to_string(int)]
+  defp pad6(int) when int < 10_000, do: [~c"00", Integer.to_string(int)]
+  defp pad6(int) when int < 100_000, do: [?0, Integer.to_string(int)]
+  defp pad6(int), do: Integer.to_string(int)
 
   def encode_metadata(meta) when is_list(meta) when is_map(meta) do
     meta
