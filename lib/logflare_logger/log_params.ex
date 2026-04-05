@@ -150,6 +150,8 @@ defmodule LogflareLogger.LogParams do
     end
   end
 
+  def traverse_convert([]), do: []
+
   def traverse_convert(xs) when is_list(xs) do
     cond do
       Keyword.keyword?(xs) ->
