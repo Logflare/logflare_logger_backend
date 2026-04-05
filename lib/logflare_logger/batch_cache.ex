@@ -47,10 +47,6 @@ defmodule LogflareLogger.BatchCache do
 
   def clear, do: BatchServer.clear()
 
-  def reset_events_in_flight, do: BatchServer.reset_events_in_flight()
-
-  def reset_events_in_flight(events), do: BatchServer.reset_events_in_flight(events)
-
   defp pending_events_asc do
     Repo.all(PendingLoggerEvent)
     |> Enum.sort_by(& &1.id, &<=/2)

@@ -26,14 +26,6 @@ defmodule LogflareLogger.BatchServer do
     GenServer.call(__MODULE__, :clear)
   end
 
-  def reset_events_in_flight do
-    GenServer.call(__MODULE__, :reset_events_in_flight)
-  end
-
-  def reset_events_in_flight(events) do
-    GenServer.call(__MODULE__, {:reset_events_in_flight, events})
-  end
-
   # Server callbacks
 
   @impl true
@@ -41,6 +33,7 @@ defmodule LogflareLogger.BatchServer do
     # Ensure ETS tables exist so delete_all doesn't crash on empty tables
     Etso.Adapter.TableRegistry.get_table(Repo, PendingLoggerEvent)
     Etso.Adapter.TableRegistry.get_table(Repo, InFlightLoggerEvent)
+    Process.send_after(self(), :reset_events_in_flight, 0)
     {:ok, %{}}
   end
 
@@ -51,13 +44,7 @@ defmodule LogflareLogger.BatchServer do
   end
 
   @impl true
-  def handle_call(:clear, _from, state) do
-    Repo.delete_all(from(PendingLoggerEvent))
-    Repo.delete_all(from(InFlightLoggerEvent))
-    {:reply, :ok, state}
-  end
-
-  def handle_call(:reset_events_in_flight, _from, state) do
+  def handle_info(:reset_events_in_flight, state) do
     events = Repo.all(InFlightLoggerEvent)
 
     if events != [] do
@@ -65,18 +52,20 @@ defmodule LogflareLogger.BatchServer do
       Repo.insert_all(PendingLoggerEvent, bodies)
 
       for e <- events, do: Repo.delete(e)
+
+      Logger.warning(
+        "LogflareLogger resetting #{length(events)} log events in flight. If this continues please submit an issue."
+      )
     end
 
-    {:reply, length(events), state}
+    {:noreply, state}
   end
 
-  def handle_call({:reset_events_in_flight, events}, _from, state) do
-    bodies = Enum.map(events, &%{body: &1.body})
-    Repo.insert_all(PendingLoggerEvent, bodies)
-
-    for e <- events, do: Repo.delete(e)
-
-    {:reply, length(events), state}
+  @impl true
+  def handle_call(:clear, _from, state) do
+    Repo.delete_all(from(PendingLoggerEvent))
+    Repo.delete_all(from(InFlightLoggerEvent))
+    {:reply, :ok, state}
   end
 
   defp do_flush(config) do
@@ -110,7 +99,10 @@ defmodule LogflareLogger.BatchServer do
           {:error, reason} ->
             Logger.warning("Logflare API error: #{inspect(reason)}")
 
-            reset_events_in_flight(in_flight_entries)
+            bodies = Enum.map(in_flight_entries, &%{body: &1.body})
+            Repo.insert_all(PendingLoggerEvent, bodies)
+
+            for e <- in_flight_entries, do: Repo.delete(e)
 
             :noop
         end
