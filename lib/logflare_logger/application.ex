@@ -5,7 +5,8 @@ defmodule LogflareLogger.Application do
 
   def start(_type, _args) do
     children = [
-      LogflareLogger.Repo
+      LogflareLogger.Repo,
+      LogflareLogger.BatchServer
     ]
 
     opts = [strategy: :one_for_one, name: LogflareLogger.Supervisor]

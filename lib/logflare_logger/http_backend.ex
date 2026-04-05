@@ -53,7 +53,7 @@ defmodule LogflareLogger.HttpBackend do
   def handle_info(:in_flight_check, config) do
     # If we somehow have events in flight stuck in our Repo, they get reset here to get flushed to Logflare.
     if GenServer.whereis(LogflareLogger.Repo) do
-      count = BatchCache.events_in_flight() |> BatchCache.reset_events_in_flight() |> Enum.count()
+      count = BatchCache.events_in_flight() |> BatchCache.reset_events_in_flight()
 
       if count > 0 do
         msg =
