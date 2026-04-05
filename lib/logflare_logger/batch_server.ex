@@ -26,8 +26,8 @@ defmodule LogflareLogger.BatchServer do
     GenServer.call(__MODULE__, :clear)
   end
 
-  def events_in_flight do
-    GenServer.call(__MODULE__, :events_in_flight)
+  def reset_events_in_flight do
+    GenServer.call(__MODULE__, :reset_events_in_flight)
   end
 
   def reset_events_in_flight(events) do
@@ -57,9 +57,17 @@ defmodule LogflareLogger.BatchServer do
     {:reply, :ok, state}
   end
 
-  def handle_call(:events_in_flight, _from, state) do
+  def handle_call(:reset_events_in_flight, _from, state) do
     events = Repo.all(InFlightLoggerEvent)
-    {:reply, events, state}
+
+    if events != [] do
+      bodies = Enum.map(events, &%{body: &1.body})
+      Repo.insert_all(PendingLoggerEvent, bodies)
+
+      for e <- events, do: Repo.delete(e)
+    end
+
+    {:reply, length(events), state}
   end
 
   def handle_call({:reset_events_in_flight, events}, _from, state) do

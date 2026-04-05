@@ -47,7 +47,7 @@ defmodule LogflareLogger.BatchCache do
 
   def clear, do: BatchServer.clear()
 
-  def events_in_flight, do: BatchServer.events_in_flight()
+  def reset_events_in_flight, do: BatchServer.reset_events_in_flight()
 
   def reset_events_in_flight(events), do: BatchServer.reset_events_in_flight(events)
 
