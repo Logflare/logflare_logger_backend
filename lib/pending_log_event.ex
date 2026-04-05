@@ -15,8 +15,7 @@ defmodule LogflareLogger.PendingLoggerEvent do
 
   defp fix_body(change) do
     change
-    |> Enum.map(fn {k, v} -> {k, check_deep_struct(v)} end)
-    |> Map.new()
+    |> Map.new(fn {k, v} -> {k, check_deep_struct(v)} end)
   end
 
   defp check_deep_struct(%Date{} = value), do: Date.to_iso8601(value)
@@ -27,8 +26,7 @@ defmodule LogflareLogger.PendingLoggerEvent do
 
   defp check_deep_struct(value) when is_map(value) do
     value
-    |> Enum.map(fn {k, v} -> {k, check_deep_struct(v)} end)
-    |> Map.new()
+    |> Map.new(fn {k, v} -> {k, check_deep_struct(v)} end)
   end
 
   defp check_deep_struct([]), do: []
