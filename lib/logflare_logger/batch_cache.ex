@@ -33,8 +33,17 @@ defmodule LogflareLogger.BatchCache do
         |> Enum.each(&Repo.delete/1)
       end
 
-      if pending_count >= config.batch_max_size do
-        BatchServer.flush(config)
+      sync_threshold = min(config.batch_max_size * 4, div(@batch_limit, 2))
+
+      cond do
+        pending_count >= sync_threshold ->
+          BatchServer.flush(config)
+
+        pending_count >= config.batch_max_size ->
+          BatchServer.flush_async(config)
+
+        true ->
+          :ok
       end
 
       {:ok, :insert_successful}

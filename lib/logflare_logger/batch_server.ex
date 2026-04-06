@@ -19,6 +19,10 @@ defmodule LogflareLogger.BatchServer do
   end
 
   def flush(config) do
+    GenServer.call(__MODULE__, {:flush, config})
+  end
+
+  def flush_async(config) do
     GenServer.cast(__MODULE__, {:flush, config})
   end
 
@@ -35,6 +39,19 @@ defmodule LogflareLogger.BatchServer do
     Etso.Adapter.TableRegistry.get_table(Repo, InFlightLoggerEvent)
     Process.send_after(self(), :reset_events_in_flight, 0)
     {:ok, %{}}
+  end
+
+  @impl true
+  def handle_call({:flush, config}, _from, state) do
+    do_flush(config)
+    {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_call(:clear, _from, state) do
+    Repo.delete_all(from(PendingLoggerEvent))
+    Repo.delete_all(from(InFlightLoggerEvent))
+    {:reply, :ok, state}
   end
 
   @impl true
@@ -59,13 +76,6 @@ defmodule LogflareLogger.BatchServer do
     end
 
     {:noreply, state}
-  end
-
-  @impl true
-  def handle_call(:clear, _from, state) do
-    Repo.delete_all(from(PendingLoggerEvent))
-    Repo.delete_all(from(InFlightLoggerEvent))
-    {:reply, :ok, state}
   end
 
   defp do_flush(config) do
