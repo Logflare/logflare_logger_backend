@@ -1,8 +1,6 @@
 defmodule LogflareLogger.BatchServer do
   @moduledoc """
   Serializes flush, clear, and reset operations on the batch tables.
-
-  `put/2` bypasses this server for performance — it writes directly to ETS.
   """
 
   use GenServer
