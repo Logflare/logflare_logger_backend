@@ -4,7 +4,7 @@ defmodule LogflareLogger.MixProject do
   def project do
     [
       app: :logflare_logger_backend,
-      version: "0.11.6",
+      version: "0.11.7",
       elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -39,7 +39,7 @@ defmodule LogflareLogger.MixProject do
       {:typed_struct, "~> 0.3.0"},
       {:bertex, "~> 1.3"},
       {:logflare_etso, "~> 1.1.2"},
-      {:logflare_api_client, "~> 0.3.5"},
+      {:logflare_api_client, "~> 0.3.7"},
 
       # Test and Dev
       {:placebo, "~> 2.0", only: :test},
