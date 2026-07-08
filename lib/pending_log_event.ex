@@ -4,19 +4,16 @@ defmodule LogflareLogger.PendingLoggerEvent do
 
   schema "logger_events" do
     field :body, :map
-    field :api_request_started_at, :integer, default: 0
   end
 
   def changeset(struct, params) do
     struct
-    |> cast(params, [:body, :api_request_started_at])
+    |> cast(params, [:body])
     |> update_change(:body, &fix_body/1)
   end
 
   defp fix_body(change) do
-    change
-    |> Enum.map(fn {k, v} -> {k, check_deep_struct(v)} end)
-    |> Map.new()
+    Map.new(change, fn {k, v} -> {k, check_deep_struct(v)} end)
   end
 
   defp check_deep_struct(%Date{} = value), do: Date.to_iso8601(value)
@@ -26,9 +23,7 @@ defmodule LogflareLogger.PendingLoggerEvent do
   defp check_deep_struct(value) when is_struct(value), do: safe_encode(value, :transform)
 
   defp check_deep_struct(value) when is_map(value) do
-    value
-    |> Enum.map(fn {k, v} -> {k, check_deep_struct(v)} end)
-    |> Map.new()
+    Map.new(value, fn {k, v} -> {k, check_deep_struct(v)} end)
   end
 
   defp check_deep_struct([]), do: []
@@ -62,7 +57,7 @@ defmodule LogflareLogger.PendingLoggerEvent do
   defp safe_encode(v, _) when is_binary(v), do: v
 
   defp safe_encode(v, :preserve) do
-    case Jason.encode(v) do
+    case Jason.encode_to_iodata(v) do
       {:ok, _} -> v
       {:error, _} -> inspect(v)
     end

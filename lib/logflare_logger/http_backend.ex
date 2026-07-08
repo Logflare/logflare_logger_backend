@@ -18,7 +18,6 @@ defmodule LogflareLogger.HttpBackend do
 
   @spec init(__MODULE__, keyword) :: {:ok, Config.t()}
   def init(__MODULE__, options \\ []) when is_list(options) do
-    schedule_in_flight_check()
     msg = "#{__MODULE__} v#{Application.spec(@app, :vsn)} started."
     log_after(:info, msg)
 
@@ -46,22 +45,6 @@ defmodule LogflareLogger.HttpBackend do
 
   def handle_info({:log_after, level, message}, config) do
     Logger.log(level, message)
-
-    {:ok, config}
-  end
-
-  def handle_info(:in_flight_check, config) do
-    # If we somehow have events in flight stuck in our Repo, they get reset here to get flushed to Logflare.
-    if GenServer.whereis(LogflareLogger.Repo) do
-      count = BatchCache.events_in_flight() |> BatchCache.reset_events_in_flight() |> Enum.count()
-
-      if count > 0 do
-        msg =
-          "#{__MODULE__} v#{Application.spec(@app, :vsn)} resetting #{count} log events in flight. If this continues please submit an issue."
-
-        log_after(:warning, msg)
-      end
-    end
 
     {:ok, config}
   end
@@ -154,10 +137,6 @@ defmodule LogflareLogger.HttpBackend do
   defp schedule_flush(%Config{} = config) do
     Process.send_after(self(), :flush, config.flush_interval)
     {:ok, config}
-  end
-
-  defp schedule_in_flight_check() do
-    Process.send_after(self(), :in_flight_check, 0)
   end
 
   defp log_after(level, message, delay \\ 5_000) do
