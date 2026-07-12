@@ -20,6 +20,7 @@ config :logflare_logger_backend,
   source_id: "...", # the Logflare source UUID, found  on your Logflare dashboard
   flush_interval: 1_000, # minimum time in ms before a log batch is sent
   max_batch_size: 50, # maximum number of events before a log batch is sent
+  max_body_size: 32 * 1024 * 1024, # Maximum size, in bytes, of any decompressed response body (see https://tesla.hexdocs.pm/Tesla.Middleware.Compression.html#module-options)
   metadata: :all # optionally you can drop keys if they exist with `metadata: [drop: [:list, :keys, :to, :drop]]`
 ```
 

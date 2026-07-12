@@ -18,7 +18,7 @@ defmodule Mix.Tasks.LogflareLogger.VerifyConfig do
     CLI.throw_on_missing_source!(source_id)
     CLI.throw_on_missing_url!(url)
 
-    client = LogflareApiClient.new(%{api_key: api_key, url: url})
+    client = LogflareApiClient.new(%{api_key: api_key, url: url, max_body_size: :infinity})
 
     timestamp = NaiveDateTime.utc_now() |> NaiveDateTime.to_iso8601() |> Kernel.<>("Z")
 

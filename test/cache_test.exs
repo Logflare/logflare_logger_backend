@@ -4,7 +4,7 @@ defmodule LogflareLogger.BatchCacheTest do
   alias LogflareLogger.BatchCache
 
   @backend_config %{
-    api_client: LogflareApiClient.new(%{url: "http://localhost:4000", api_key: ""}),
+    api_client: LogflareApiClient.new(%{url: "http://localhost:4000", api_key: "", max_body_size: :infinity}),
     source_id: "source-id",
     batch_max_size: 10
   }

@@ -4,6 +4,7 @@ defmodule LogflareLogger.HttpBackend do
   """
 
   @default_api_url "https://api.logflare.app"
+  @default_max_body_size 32 * 1024 * 1024 # https://tesla.hexdocs.pm/Tesla.Middleware.Compression.html#module-options
   @app :logflare_logger_backend
   @behaviour :gen_event
 
@@ -108,12 +109,13 @@ defmodule LogflareLogger.HttpBackend do
     metadata = Keyword.get(options, :metadata, config.metadata)
     batch_max_size = Keyword.get(options, :batch_max_size, config.batch_max_size)
     flush_interval = Keyword.get(options, :flush_interval, config.flush_interval)
+    max_body_size = Keyword.get(options, :max_body_size, @default_max_body_size)
 
     CLI.throw_on_missing_url!(url)
     CLI.throw_on_missing_source!(source_id)
     CLI.throw_on_missing_api_key!(api_key)
 
-    api_client = LogflareApiClient.new(%{url: url, api_key: api_key})
+    api_client = LogflareApiClient.new(%{url: url, api_key: api_key, max_body_size: max_body_size})
 
     config =
       struct!(
