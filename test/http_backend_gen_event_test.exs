@@ -1,5 +1,6 @@
 defmodule LogflareLogger.HttpBackendTest do
   use ExUnit.Case
+  import ExUnit.CaptureLog
   alias LogflareLogger.{HttpBackend, Formatter, BatchCache}
   use Placebo
 
@@ -71,6 +72,42 @@ defmodule LogflareLogger.HttpBackendTest do
           any()
         )
       )
+    end
+  end
+
+  describe "HttpBackend.handle_event/2 with deprecated `metadata` keyword list config" do
+    test "the emitted deprecation warning is itself re-processed as a log event and re-emits the warning, risking an infinite loop" do
+      allow(LogflareApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{}})
+
+      {:ok, state} = init_with_default(metadata: [:some_key])
+
+      info_msg = {:info, nil, {Logger, "log message", ts(0), []}}
+
+      log =
+        capture_log(fn ->
+          {:ok, _state} = HttpBackend.handle_event(info_msg, state)
+        end)
+
+      assert log =~ "deprecated"
+
+      # When this backend is attached to Logger (as it is in real usage), the
+      # deprecation warning logged above is itself dispatched back to
+      # handle_event/2 as a new log event. Since format_event/5 only looks at
+      # the backend's config (still the deprecated keyword list) and not at
+      # the contents of the message, it re-emits the same warning here too -
+      # this is what causes the infinite loop.
+      warning_msg =
+        {:warning, nil,
+         {Logger,
+          "Your logflare_logger_backend configuration key `metadata` is deprecated. Looks like you're using a list of keywords. Please use `metadata: :all` or `metadata: [drop: [:keys, :to, :drop]]`",
+          ts(1), []}}
+
+      log2 =
+        capture_log(fn ->
+          {:ok, _state} = HttpBackend.handle_event(warning_msg, state)
+        end)
+
+      assert log2 =~ "deprecated"
     end
   end
 
