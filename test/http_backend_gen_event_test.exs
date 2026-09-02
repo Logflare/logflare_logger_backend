@@ -76,7 +76,7 @@ defmodule LogflareLogger.HttpBackendTest do
   end
 
   describe "HttpBackend.handle_event/2 with deprecated `metadata` keyword list config" do
-    test "the emitted deprecation warning is itself re-processed as a log event and re-emits the warning, risking an infinite loop" do
+    test "the deprecation warning is only emitted once, even though it is itself re-processed as a log event" do
       allow(LogflareApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{}})
 
       {:ok, state} = init_with_default(metadata: [:some_key])
@@ -92,10 +92,9 @@ defmodule LogflareLogger.HttpBackendTest do
 
       # When this backend is attached to Logger (as it is in real usage), the
       # deprecation warning logged above is itself dispatched back to
-      # handle_event/2 as a new log event. Since format_event/5 only looks at
-      # the backend's config (still the deprecated keyword list) and not at
-      # the contents of the message, it re-emits the same warning here too -
-      # this is what causes the infinite loop.
+      # handle_event/2 as a new log event. format_event/5 must not re-emit
+      # the warning here too, otherwise every event - including the warnings
+      # it produces - would trigger another warning, forever.
       warning_msg =
         {:warning, nil,
          {Logger,
@@ -107,7 +106,7 @@ defmodule LogflareLogger.HttpBackendTest do
           {:ok, _state} = HttpBackend.handle_event(warning_msg, state)
         end)
 
-      assert log2 =~ "deprecated"
+      refute log2 =~ "deprecated"
     end
   end
 
