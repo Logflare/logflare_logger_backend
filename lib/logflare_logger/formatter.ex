@@ -6,6 +6,8 @@ defmodule LogflareLogger.Formatter do
   alias LogflareLogger.LogParams
   alias LogflareLogger.BackendConfig, as: Config
 
+  @metadata_deprecation_warned_key {__MODULE__, :metadata_deprecation_warned}
+
   def format(level, message, ts, metadata) do
     try do
       LogParams.encode(ts, level, message, metadata)
@@ -43,14 +45,26 @@ defmodule LogflareLogger.Formatter do
   end
 
   def format_event(level, msg, ts, meta, %Config{metadata: metakeys}) when is_list(metakeys) do
-    Logger.warning(
-      "Your logflare_logger_backend configuration key `metadata` is deprecated. Looks like you're using a list of keywords. Please use `metadata: :all` or `metadata: [drop: [:keys, :to, :drop]]`"
-    )
+    warn_metadata_deprecated_once(metakeys)
 
     format(level, msg, ts, Map.new(meta))
   end
 
   def format_event(_, _, _, _, nil) do
     raise("LogflareLogger is not configured!")
+  end
+
+  # Guards against an infinite loop: Logger.warning/1 re-enters this backend
+  # as a new event, which would otherwise re-trigger the same warning.
+  defp warn_metadata_deprecated_once(metakeys) do
+    key = {@metadata_deprecation_warned_key, metakeys}
+
+    if :persistent_term.get(key, false) == false do
+      :persistent_term.put(key, true)
+
+      Logger.warning(
+        "Your logflare_logger_backend configuration key `metadata` is deprecated. Looks like you're using a list of keywords. Please use `metadata: :all` or `metadata: [drop: [:keys, :to, :drop]]`"
+      )
+    end
   end
 end

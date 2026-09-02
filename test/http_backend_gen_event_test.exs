@@ -1,5 +1,6 @@
 defmodule LogflareLogger.HttpBackendTest do
   use ExUnit.Case
+  import ExUnit.CaptureLog
   alias LogflareLogger.{HttpBackend, Formatter, BatchCache}
   use Placebo
 
@@ -71,6 +72,38 @@ defmodule LogflareLogger.HttpBackendTest do
           any()
         )
       )
+    end
+  end
+
+  describe "HttpBackend.handle_event/2 with deprecated `metadata` keyword list config" do
+    test "the deprecation warning is only emitted once, even though it is itself re-processed as a log event" do
+      allow(LogflareApiClient.post_logs(any(), any(), any()), return: {:ok, %Tesla.Env{}})
+
+      {:ok, state} = init_with_default(metadata: [:some_key])
+
+      info_msg = {:info, nil, {Logger, "log message", ts(0), []}}
+
+      log =
+        capture_log(fn ->
+          {:ok, _state} = HttpBackend.handle_event(info_msg, state)
+        end)
+
+      assert log =~ "deprecated"
+
+      # Simulates the warning above being dispatched back to this backend,
+      # as happens once it's attached to a live Logger.
+      warning_msg =
+        {:warning, nil,
+         {Logger,
+          "Your logflare_logger_backend configuration key `metadata` is deprecated. Looks like you're using a list of keywords. Please use `metadata: :all` or `metadata: [drop: [:keys, :to, :drop]]`",
+          ts(1), []}}
+
+      log2 =
+        capture_log(fn ->
+          {:ok, _state} = HttpBackend.handle_event(warning_msg, state)
+        end)
+
+      refute log2 =~ "deprecated"
     end
   end
 
