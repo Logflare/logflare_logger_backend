@@ -54,11 +54,8 @@ defmodule LogflareLogger.Formatter do
     raise("LogflareLogger is not configured!")
   end
 
-  # Logger.warning/1 emits a new log event, which is itself routed back
-  # through HttpBackend.handle_event/2 -> format_event/5. Without this guard,
-  # a deprecated `metadata` config would cause that warning to re-trigger
-  # itself on every event forever. Keying on the offending config value (not
-  # a fixed key) lets a distinct misconfiguration still be warned about once.
+  # Guards against an infinite loop: Logger.warning/1 re-enters this backend
+  # as a new event, which would otherwise re-trigger the same warning.
   defp warn_metadata_deprecated_once(metakeys) do
     key = {@metadata_deprecation_warned_key, metakeys}
 

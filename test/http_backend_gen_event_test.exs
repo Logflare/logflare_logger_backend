@@ -90,11 +90,8 @@ defmodule LogflareLogger.HttpBackendTest do
 
       assert log =~ "deprecated"
 
-      # When this backend is attached to Logger (as it is in real usage), the
-      # deprecation warning logged above is itself dispatched back to
-      # handle_event/2 as a new log event. format_event/5 must not re-emit
-      # the warning here too, otherwise every event - including the warnings
-      # it produces - would trigger another warning, forever.
+      # Simulates the warning above being dispatched back to this backend,
+      # as happens once it's attached to a live Logger.
       warning_msg =
         {:warning, nil,
          {Logger,
