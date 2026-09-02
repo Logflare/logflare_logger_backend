@@ -4,7 +4,7 @@ defmodule LogflareLogger.MixProject do
   def project do
     [
       app: :logflare_logger_backend,
-      version: "0.11.7",
+      version: "0.11.8",
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
